@@ -1,0 +1,20 @@
+[package]
+name = "celo-light-client-lib"
+version = "0.1.0"
+authors = ["Kaczanowski Mateusz <mateusz@chorus.one>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+hyper = "0.13.9"
+tokio = { version = "0.2", features = ["full"] }
+serde_json = "1.0"
+serde_derive = "1.0"
+serde = "1.0"
+hex = "0.4"
+num = "0.3"
+
+[[bin]]
+name = "celo-light-client-lib"
+path = "src/main.rs"
