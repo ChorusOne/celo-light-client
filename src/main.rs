@@ -8,8 +8,11 @@ extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 
+extern crate rlp;
+
 // use std::fs;
 use types::header::Header;
+use types::istanbul::IstanbulExtra;
 use relayer::Relayer;
 
 #[tokio::main]
@@ -18,6 +21,8 @@ async fn main(){
 
     let header: Header = relayer.get_block_header_by_number("latest".to_string()).await.unwrap();
     println!("{}", serde_json::to_string_pretty(&header).unwrap());
+
+    println!("{:?}", IstanbulExtra::new(&header.extra));
 
     //let contents = fs::read_to_string("/tmp/t")
         //.expect("Something went wrong reading the file");
