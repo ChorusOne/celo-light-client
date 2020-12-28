@@ -2,7 +2,7 @@ use crate::types::header::Address;
 use crate::types::header::ADDRESS_LENGTH;
 
 use rlp::{DecoderError, Decodable, Rlp};
-use rlp_derive::RlpDecodable;
+use num_bigint::{BigInt, Sign};
 
 // SOURCE: github.com/celo-org/celo-bls-go@v0.1.6/bls/bls.go
 pub const PUBLIC_KEY_LENGTH: usize = 96;
@@ -13,17 +13,28 @@ pub type SerializedPublicKey = [u8; PUBLIC_KEY_LENGTH];
 // SOURCE: core/types/istanbul.go
 pub const ISTANBUL_EXTRA_VANITY_LENGTH: usize = 32;
 
-#[derive(RlpDecodable, Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct IstanbulAggregatedSeal {
     /// Bitmap is a bitmap having an active bit for each validator that signed this block
-    pub bitmap: u64, // NOTE it was a big.Int
+    pub bitmap: BigInt,
 
     /// Signature is an aggregated BLS signature resulting from signatures by each validator that signed this block
     pub signature: Vec<u8>,
 
     /// Round is the round in which the signature was created.
-    pub round: u64, // NOTE: it was a big.Int
+    pub round: BigInt,
 }
+
+impl Decodable for IstanbulAggregatedSeal {
+    fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
+        Ok(IstanbulAggregatedSeal{
+            bitmap: rlp_to_big_int(rlp, 0)?,
+            signature: rlp.val_at(1)?,
+            round: rlp_to_big_int(rlp, 2)?
+        })
+    }
+}
+
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct IstanbulExtra {
@@ -34,7 +45,7 @@ pub struct IstanbulExtra {
     pub added_validators_public_keys: Vec<SerializedPublicKey>,
     
     /// RemovedValidators is a bitmap having an active bit for each removed validator in the block
-    pub removed_validators: u64, // NOTE: it was a big.Int
+    pub removed_validators: BigInt,
 
     /// Seal is an ECDSA signature by the proposer
     pub seal: Vec<u8>,
@@ -76,12 +87,18 @@ impl Decodable for IstanbulExtra {
             Ok(IstanbulExtra{
                 added_validators,
                 added_validators_public_keys,
-                removed_validators: rlp.val_at(2)?,
+                removed_validators: rlp_to_big_int(rlp, 2)?,
                 seal: rlp.val_at(3)?,
                 aggregated_seal: rlp.val_at(4)?,
                 parent_aggregated_seal: rlp.val_at(5)?,
             })
         }
+}
+
+fn rlp_to_big_int(rlp: &Rlp, index: usize) -> Result<BigInt, DecoderError> {
+    rlp.at(index)?.decoder().decode_value(
+        |bytes| Ok(BigInt::from_bytes_be(Sign::Plus, bytes))
+    )
 }
 
 fn bytes_to_address(bytes: &[u8]) -> Result<Address, DecoderError> {
@@ -131,17 +148,17 @@ mod tests {
                 bytes_to_address(hex::decode("294fc7e8f22b3bcdcf955dd7ff3ba2ed833f8212").unwrap().as_slice()).unwrap(),
             ],
             added_validators_public_keys: vec![],
-            removed_validators: 12,
+            removed_validators: BigInt::new(Sign::Plus, vec![12]),
             seal: Vec::new(),
             aggregated_seal: IstanbulAggregatedSeal{
-                bitmap: 0,
+                bitmap: BigInt::new(Sign::Plus, Vec::new()),
                 signature: Vec::new(),
-                round: 0
+                round: BigInt::new(Sign::Plus, Vec::new())
             },
             parent_aggregated_seal: IstanbulAggregatedSeal{
-                bitmap: 0,
+                bitmap: BigInt::new(Sign::Plus, Vec::new()),
                 signature: Vec::new(),
-                round: 0
+                round: BigInt::new(Sign::Plus, Vec::new())
             },
         };
 

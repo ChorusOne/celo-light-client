@@ -9,6 +9,7 @@ extern crate serde_derive;
 extern crate serde_json;
 
 extern crate rlp;
+extern crate num_bigint;
 
 // use std::fs;
 use types::header::Header;
