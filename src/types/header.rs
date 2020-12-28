@@ -2,6 +2,8 @@
 // SOURCE: common/types.go
 // SOURCe: core/types/bloom9.go
 
+use num_bigint::BigInt;
+
 /// HASH_LENGTH represents the number of bytes used in a header hash
 pub const HASH_LENGTH: usize = 32;
 
@@ -47,7 +49,7 @@ pub struct Header {
     pub bloom: Bloom,
 
     #[serde(with = "crate::serialization::bytes::hexnum")]
-    pub number: u64, // NOTE: originally big.Int but core/types/block.go#L91 indicates uint64
+    pub number: BigInt,
 
     #[serde(with = "crate::serialization::bytes::hexnum")]
     pub gas_used: u64,

@@ -16,7 +16,6 @@ hex = "0.4"
 num = "0.3"
 num-bigint = "0.3.1"
 rlp = "0.4.6"
-rlp-derive = "0.1.0"
 
 [[bin]]
 name = "celo-light-client-lib"

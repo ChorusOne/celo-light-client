@@ -71,15 +71,13 @@ impl IstanbulExtra {
 impl Decodable for IstanbulExtra {
         fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
             let added_validators: Vec<Address> = rlp
-                .at(0)
-                .unwrap()
+                .at(0)?
                 .iter()
                 .map(|r| r.decoder().decode_value(bytes_to_address).unwrap())
                 .collect();
 
             let added_validators_public_keys: Vec<SerializedPublicKey> = rlp
-                .at(1)
-                .unwrap()
+                .at(1)?
                 .iter()
                 .map(|r| r.decoder().decode_value(bytes_to_serialized_public_key).unwrap())
                 .collect();
