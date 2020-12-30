@@ -57,3 +57,30 @@ pub(crate) mod hexnum {
         format!("0x{:x}", value).serialize(serializer)
     }
 }
+
+// TODO: isn't there a nice trait for from_str_radix and rug::Integer?
+pub(crate) mod hexbigint {
+    use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
+    use rug::Integer;
+
+    /// Deserialize string into T
+    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<Integer, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s: &str = Deserialize::deserialize(deserializer)?;
+        if s.len() <= 2 || !s.starts_with("0x"){
+            return Err(D::Error::custom(format!("hex string should start with '0x', got: {}", s)));
+        }
+	Integer::from_str_radix(&s[2..], 16).map_err(D::Error::custom)
+    }
+
+    /// Serialize from T into string
+    pub(crate) fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: std::fmt::LowerHex,
+    {
+        format!("0x{:x}", value).serialize(serializer)
+    }
+}

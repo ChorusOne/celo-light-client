@@ -14,8 +14,9 @@ serde_derive = "1.0"
 serde = "1.0"
 hex = "0.4"
 num = "0.3"
-num-bigint = "0.3.1"
 rlp = "0.4.6"
+sha3 = "0.9.1"
+rug = { version = "1.11.0", features = ["serde"] }
 
 [[bin]]
 name = "celo-light-client-lib"
