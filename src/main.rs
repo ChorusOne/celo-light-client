@@ -13,6 +13,7 @@ extern crate serde_json;
 extern crate rlp;
 extern crate rug;
 extern crate sha3;
+extern crate secp256k1;
 
 
 // TODO: https://github.com/rust-num/num-bigint/issues/172 (BIGINT bit)
@@ -79,7 +80,10 @@ async fn main(){
         }
     }
 
-    println!("STATE_VALIDATORS: {:?}", state.validators);
+    println!("STATE_HASH: {:?}", hex::encode(state.hash));
+    println!("STATE_NUMBER: {:?}", state.number);
+    println!("STATE_epoch: {:?}", state.epoch);
+    println!("STATE_VALIDATORS: {:?}", state.validators.iter().map(|v| hex::encode(v.address)).collect::<Vec<String>>().len());
 
     //let contents = fs::read_to_string("/tmp/t")
         //.expect("Something went wrong reading the file");
