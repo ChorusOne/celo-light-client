@@ -3,6 +3,7 @@ mod serialization;
 mod relayer;
 mod istanbul;
 mod state;
+mod crypto;
 
 #[macro_use]
 extern crate serde_derive;
@@ -14,15 +15,18 @@ extern crate rlp;
 extern crate rug;
 extern crate sha3;
 extern crate secp256k1;
+extern crate itertools;
+extern crate bls_crypto;
+extern crate algebra;
 
 
 // TODO: https://github.com/rust-num/num-bigint/issues/172 (BIGINT bit)
-// use std::fs;
 use types::header::Header;
 use types::istanbul::IstanbulExtra;
 use relayer::Relayer;
 use istanbul::*;
 use state::*;
+use crypto::bls::*;
 
 fn firstn(first_epoch: u64, max_epoch: u64) -> impl std::iter::Iterator<Item = u64> {
     let mut current_epoch = first_epoch;
@@ -44,6 +48,7 @@ async fn main(){
 
     let current_block_header: Header = relayer.get_block_header_by_number("latest".to_string()).await.unwrap();
     let current_epoch_number: u64 = get_epoch_number(current_block_header.number.to_u64().unwrap(), EPOCH_SIZE);
+    let current_block_extra = IstanbulExtra::from_rlp(&current_block_header.extra).unwrap();
 
     // build up state from the genesis block to the latest
     let mut state = State::new();
@@ -90,10 +95,8 @@ async fn main(){
     println!("STATE_HASH: {:?}", hex::encode(state.hash));
     println!("STATE_NUMBER: {:?}", state.number);
     println!("STATE_epoch: {:?}", state.epoch);
-    println!("STATE_VALIDATORS: {:?}", state.validators.iter().map(|v| hex::encode(v.address)).collect::<Vec<String>>().len());
+    println!("STATE_VALIDATORS: {:?}", state.validators.iter().map(|v| hex::encode(v.address)).collect::<Vec<String>>());
 
-    //let contents = fs::read_to_string("/tmp/t")
-        //.expect("Something went wrong reading the file");
-    //let header: Header = serde_json::from_str(contents.as_str()).unwrap();
-    //println!("{}", serde_json::to_string_pretty(&header).unwrap());
+    let verify_result = verify_aggregated_seal(current_block_header.hash(), state.validators, current_block_extra.aggregated_seal);
+    println!("LAST HEADER SEAL VERIFY: {:?}", verify_result);
 }

@@ -69,6 +69,10 @@ impl State {
     }
 }
 
+pub fn min_quorum_size(validators: &[Validator]) -> u64 {
+    return ((2.0*(validators.len() as f64) / 3.0) as f64).ceil() as u64
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

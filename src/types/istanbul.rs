@@ -13,6 +13,13 @@ pub type SerializedPublicKey = [u8; PUBLIC_KEY_LENGTH];
 // SOURCE: core/types/istanbul.go
 pub const ISTANBUL_EXTRA_VANITY_LENGTH: usize = 32;
 
+pub enum IstanbulMsg {
+    PrePrepare,
+    Prepare,
+    Commit,
+    RoundChange
+}
+
 #[derive(Clone, PartialEq, Debug)]
 pub struct IstanbulAggregatedSeal {
     /// Bitmap is a bitmap having an active bit for each validator that signed this block
@@ -295,6 +302,14 @@ bytes_to_serialized_public_key(hex::decode("fc55fe153f5f7ab3914bc2c36f71055224fc
             assert_eq!(parsed, expected_ist);
         }
     }
+
+    // TODO: add a test suite for golang big.Int & rust rug::Integer serialization and
+    // deserialization, since this influences the build of validator set etc
+    //#[test]
+    //fn ttt() {
+        //let t = Integer::from_str_radix("35497482140004384249", 10).unwrap();
+        //println!("T: {:?}", t.to_digits::<u8>(Order::Msf));
+    //}
 
     #[test]
     fn rejects_insufficient_vanity() {
