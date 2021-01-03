@@ -65,7 +65,7 @@ impl State {
         }
 
         self.validators = tmp;
-        return false;
+        return true;
     }
 }
 
@@ -133,6 +133,15 @@ mod tests {
        address
     }
 
+    fn bytes_to_address(bytes: &[u8]) -> Address {
+        let mut address = [0; 20];
+
+        for (i, byte) in bytes.iter().enumerate() {
+            address[address.len()-i-1] = *byte;
+        }
+        address
+    }
+
     fn generate_key() -> (SecretKey, PublicKey) {
         let mut rng = OsRng::new().expect("OsRng");
         let secp = Secp256k1::new();
@@ -151,6 +160,57 @@ mod tests {
         }
 
         bitmap
+    }
+
+    #[test]
+    fn test_add_remove() {
+        let mut state = State::new();
+        let mut result = state.add_validators(vec![
+            Validator{
+                address: bytes_to_address(&vec![0x3 as u8]),
+                public_key: [0; PUBLIC_KEY_LENGTH],
+            }
+        ]);
+
+        assert_eq!(result, true);
+
+        result = state.add_validators(vec![
+            Validator{
+                address: bytes_to_address(&vec![0x2 as u8]),
+                public_key: [0; PUBLIC_KEY_LENGTH],
+            },
+            Validator{
+                address: bytes_to_address(&vec![0x1 as u8]),
+                public_key: [0; PUBLIC_KEY_LENGTH],
+            }
+        ]);
+
+        assert_eq!(result, true);
+        assert_eq!(state.validators.len(), 3);
+
+        // verify ordering
+        let current_addresses: Vec<Address> = state.validators.iter().map(|val| val.address).collect();
+        let expecected_addresses: Vec<Address> = vec![
+            bytes_to_address(&vec![0x3 as u8]),
+            bytes_to_address(&vec![0x2 as u8]),
+            bytes_to_address(&vec![0x1 as u8]),
+        ];
+        assert_eq!(current_addresses, expecected_addresses);
+
+        // remove first validator
+        result = state.remove_validators(Integer::from(1));
+        assert_eq!(result, true);
+        assert_eq!(state.validators.len(), 2);
+
+        // remove second validator
+        result = state.remove_validators(Integer::from(2));
+        assert_eq!(result, true);
+        assert_eq!(state.validators.len(), 1);
+
+        // remove third validator
+        result = state.remove_validators(Integer::from(1));
+        assert_eq!(result, true);
+        assert_eq!(state.validators.len(), 0);
     }
 
     #[test]

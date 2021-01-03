@@ -90,7 +90,7 @@ impl Encodable for Header {
         s.append(&self.bloom.to_vec());
 
         // number
-        s.append(&self.number.to_digits(Order::LsfBe));
+        s.append(&self.number.to_digits(Order::Msf));
 
         // gas_used
         s.append(&self.gas_used);

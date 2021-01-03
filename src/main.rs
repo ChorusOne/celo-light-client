@@ -49,12 +49,13 @@ async fn main(){
     let mut state = State::new();
 
     for (i, epoch_block_num) in firstn(0, current_epoch_number).enumerate() {
-        let epoch_block_number_hex = format!("0x{:x}", epoch_block_num);
-        let header = relayer.get_block_header_by_number(epoch_block_number_hex).await;
+        //println!("IS_LAST_BLOCK_OF_EPOCH: {}", is_last_block_of_epoch(epoch_block_num, EPOCH_SIZE));
+        let epoch_block_number_hex = format!("0x{:x}", epoch_block_num.clone());
+        let header = relayer.get_block_header_by_number(epoch_block_number_hex.clone()).await;
         //println!("{}", serde_json::to_string_pretty(&header.number).unwrap());
 
         if header.is_ok() {
-            println!("EPOCH BLOCK NUM: {:?} ", epoch_block_num);
+            println!("EPOCH BLOCK NUM: {:?} ({})", epoch_block_num.clone(), epoch_block_number_hex.clone());
             let header = header.unwrap();
 
             let extra = IstanbulExtra::from_rlp(&header.extra).unwrap();
@@ -67,14 +68,20 @@ async fn main(){
                 })
             }
 
-            state.remove_validators(extra.removed_validators);
-            state.add_validators(validators);
+            assert_eq!(extra.added_validators.len(), validators.len());
+
+            let result_remove = state.remove_validators(extra.removed_validators.clone());
+            let result_add = state.add_validators(validators);
+
+            if !result_remove || !result_add {
+                println!("-----------");
+                println!("EPOCH BLOCK NUM: {:?} ({})", epoch_block_num.clone(), epoch_block_number_hex.clone());
+                return;
+            }
+
             state.epoch = i as u64; // TODO
             state.number += EPOCH_SIZE; //TODO
             state.hash = header.hash();
-
-            //println!("EXTRA ADDED: {:?}", IstanbulExtra::from_rlp(&header.extra).unwrap().added_validators);
-            //println!("EXTRA REMOVED: {:?}", IstanbulExtra::from_rlp(&header.extra).unwrap().removed_validators);
         } else {
             println!("EPOCH BLOCK NUM: {:?} ---- FAILED", epoch_block_num);
         }
