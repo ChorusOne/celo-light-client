@@ -19,6 +19,8 @@ sha3 = "0.9.1"
 rug = { version = "1.11.0", features = ["serde"] }
 secp256k1 = { version = "0.19.0", features = ["bitcoin_hashes", "rand"] }
 itertools = "0.10.0"
+anomaly = "0.2.0"
+thiserror = "1.0.23"
 bls-crypto = { git = "https://github.com/celo-org/celo-bls-snark-rs.git"  }
 algebra = { git = "https://github.com/celo-org/zexe", features = ["derive", "bls12_377", "ed_on_bw6_761", "parallel"] }
 

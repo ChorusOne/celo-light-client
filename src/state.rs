@@ -79,8 +79,8 @@ mod tests {
     use sha3::{Digest, Keccak256};
     use secp256k1::rand::rngs::OsRng;
     use secp256k1::{PublicKey, Secp256k1, SecretKey};
-    use crate::types::istanbul::PUBLIC_KEY_LENGTH;
     use std::{cmp, cmp::Ordering};
+    use crate::traits::default::DefaultFrom;
 
     macro_rules! string_vec {
         ($($x:expr),*) => (vec![$($x.to_string()),*]);
@@ -124,7 +124,7 @@ mod tests {
     fn convert_val_names_to_validators(accounts: &mut AccountPool, val_names: Vec<String>) -> Vec<Validator> {
         val_names.iter().map(|name| Validator{
             address: accounts.address(name.to_string()),
-            public_key: [0; PUBLIC_KEY_LENGTH],
+            public_key: SerializedPublicKey::default(),
         }).collect()
     }
 
@@ -172,7 +172,7 @@ mod tests {
         let mut result = state.add_validators(vec![
             Validator{
                 address: bytes_to_address(&vec![0x3 as u8]),
-                public_key: [0; PUBLIC_KEY_LENGTH],
+                public_key: SerializedPublicKey::default(),
             }
         ]);
 
@@ -181,11 +181,11 @@ mod tests {
         result = state.add_validators(vec![
             Validator{
                 address: bytes_to_address(&vec![0x2 as u8]),
-                public_key: [0; PUBLIC_KEY_LENGTH],
+                public_key: SerializedPublicKey::default(),
             },
             Validator{
                 address: bytes_to_address(&vec![0x1 as u8]),
-                public_key: [0; PUBLIC_KEY_LENGTH],
+                public_key: SerializedPublicKey::default(),
             }
         ]);
 

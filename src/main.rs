@@ -4,6 +4,9 @@ mod relayer;
 mod istanbul;
 mod state;
 mod crypto;
+mod traits;
+mod macros;
+mod errors;
 
 #[macro_use]
 extern crate serde_derive;
@@ -18,6 +21,8 @@ extern crate secp256k1;
 extern crate itertools;
 extern crate bls_crypto;
 extern crate algebra;
+extern crate anomaly;
+extern crate thiserror;
 
 
 // TODO: https://github.com/rust-num/num-bigint/issues/172 (BIGINT bit)

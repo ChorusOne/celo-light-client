@@ -1,5 +1,6 @@
 use crate::types::header::Header;
-use crate::types::istanbul::{IstanbulExtra, IstanbulAggregatedSeal, ISTANBUL_EXTRA_VANITY_LENGTH};
+use crate::types::istanbul::{IstanbulExtra, IstanbulExtraVanity,  IstanbulAggregatedSeal};
+use crate::traits::default::FromBytes;
 
 // TODO: This file is temprory holder for those functions, clean this up afterwards
 pub const EPOCH_SIZE: u64 = 17280;
@@ -65,7 +66,7 @@ pub fn istanbul_filtered_header(header: &Header, keep_seal: bool) -> Result<Head
     }
     extra.aggregated_seal = IstanbulAggregatedSeal::new();
 
-    let payload = extra.to_rlp(&new_header.extra[..ISTANBUL_EXTRA_VANITY_LENGTH]);
+    let payload = extra.to_rlp(IstanbulExtraVanity::from_bytes(&new_header.extra).unwrap()); // todo pass ?
     new_header.extra = payload;
 
     Ok(new_header)
