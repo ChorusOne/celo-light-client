@@ -1,8 +1,7 @@
-use crate::types::header::{Address};
-use crate::types::istanbul::{SerializedPublicKey};
-use rug::Integer;
+use crate::types::header::{Hash, Address};
+use crate::types::istanbul::SerializedPublicKey;
 use std::collections::HashMap;
-use crate::types::header::Hash;
+use rug::Integer;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Validator{

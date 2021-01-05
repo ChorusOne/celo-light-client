@@ -1,4 +1,4 @@
-use crate::types::header::Header;
+use celo::Header;
 
 use hyper::client::{Client, HttpConnector};
 use hyper::http::Request;
