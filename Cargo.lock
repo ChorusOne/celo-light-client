@@ -52,7 +52,7 @@ dependencies = [
  "cc",
  "derivative",
  "either",
- "itertools 0.9.0",
+ "itertools",
  "num-traits",
  "paste",
  "peekmore",
@@ -268,7 +268,6 @@ dependencies = [
  "bls-crypto",
  "hex 0.4.2",
  "hyper",
- "itertools 0.10.0",
  "num",
  "rand 0.6.5",
  "rand_core 0.4.2",
@@ -812,15 +811,6 @@ name = "itertools"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "284f18f85651fe11e8a991b2adb42cb078325c996ed026d994719efcfca1d54b"
-dependencies = [
- "either",
-]
-
-[[package]]
-name = "itertools"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37d572918e350e82412fe766d24b15e6682fb2ed2bbe018280caa810397cb319"
 dependencies = [
  "either",
 ]

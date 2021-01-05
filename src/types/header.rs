@@ -1,16 +1,11 @@
-// SOURCE: core/types/block.go
-// SOURCE: common/types.go
-// SOURCe: core/types/bloom9.go
-
+use crate::istanbul::istanbul_filtered_header;
+use crate::types::istanbul::ISTANBUL_EXTRA_VANITY_LENGTH;
+use crate::traits::default::{DefaultFrom, FromBytes};
+use crate::slice_as_array_ref;
+use crate::errors::Error;
 use rug::{integer::Order, Integer};
 use rlp::{Encodable, RlpStream};
 use sha3::{Digest, Keccak256};
-use crate::istanbul::istanbul_filtered_header;
-use crate::types::istanbul::ISTANBUL_EXTRA_VANITY_LENGTH;
-use crate::traits::default::DefaultFrom;
-use crate::traits::default::FromBytes;
-use crate::slice_as_array_ref;
-use crate::errors::Error;
 
 /// HASH_LENGTH represents the number of bytes used in a header hash
 pub const HASH_LENGTH: usize = 32;
@@ -29,21 +24,6 @@ pub type Address = [u8; ADDRESS_LENGTH];
 
 /// Bloom represents a 2048 bit bloom filter
 pub type Bloom = [u8; BLOOM_BYTE_LENGTH];
-
-impl DefaultFrom for Bloom {
-    fn default() -> Self {
-        [0; BLOOM_BYTE_LENGTH]
-    }
-}
-
-impl FromBytes for Address {
-    fn from_bytes(data: &[u8]) -> Result<&Address, Error> {
-        slice_as_array_ref!(
-            &data[..ADDRESS_LENGTH],
-            ADDRESS_LENGTH
-        )
-    }
-}
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -86,6 +66,34 @@ pub struct Header {
     pub extra: Vec<u8>
 }
 
+impl Header {
+    pub fn new() -> Self {
+        Self {
+            parent_hash: Hash::default(),
+            coinbase: Address::default(),
+            root: Hash::default(),
+            tx_hash: Hash::default(),
+            receipt_hash: Hash::default(),
+            bloom: Bloom::default(),
+            number: Integer::default(),
+            gas_used: u64::default(),
+            time: u64::default(),
+            extra: Vec::default(),
+        }
+    }
+
+    pub fn hash(&self) -> Hash {
+        if self.extra.len() >= ISTANBUL_EXTRA_VANITY_LENGTH {
+            let istanbul_header = istanbul_filtered_header(&self, true);
+            if istanbul_header.is_ok() {
+                return rlp_hash(&istanbul_header.unwrap());
+            }
+        }
+
+        rlp_hash(self)
+    }
+}
+
 impl Encodable for Header {
     fn rlp_append(&self, s: &mut RlpStream) {
         s.begin_list(10);
@@ -122,31 +130,18 @@ impl Encodable for Header {
     }
 }
 
-impl Header {
-    pub fn new() -> Self {
-        Self {
-            parent_hash: Hash::default(),
-            coinbase: Address::default(),
-            root: Hash::default(),
-            tx_hash: Hash::default(),
-            receipt_hash: Hash::default(),
-            bloom: Bloom::default(),
-            number: Integer::default(),
-            gas_used: u64::default(),
-            time: u64::default(),
-            extra: Vec::default(),
-        }
+impl DefaultFrom for Bloom {
+    fn default() -> Self {
+        [0; BLOOM_BYTE_LENGTH]
     }
+}
 
-    pub fn hash(&self) -> Hash {
-        if self.extra.len() >= ISTANBUL_EXTRA_VANITY_LENGTH {
-            let istanbul_header = istanbul_filtered_header(&self, true);
-            if istanbul_header.is_ok() {
-                return rlp_hash(&istanbul_header.unwrap());
-            }
-        }
-
-        rlp_hash(self)
+impl FromBytes for Address {
+    fn from_bytes(data: &[u8]) -> Result<&Address, Error> {
+        slice_as_array_ref!(
+            &data[..ADDRESS_LENGTH],
+            ADDRESS_LENGTH
+        )
     }
 }
 

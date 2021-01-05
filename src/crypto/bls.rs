@@ -1,21 +1,18 @@
-// TODO: clumsy rust style
-use rug::{Integer, integer::Order};
-use crate::algebra::{CanonicalDeserialize};
+use crate::algebra::CanonicalDeserialize;
 use crate::types::header::Hash;
-use crate::types::istanbul::IstanbulAggregatedSeal;
-use bls_crypto::{
-    PublicKey, Signature,
-    hash_to_curve::try_and_increment::DIRECT_HASH_TO_G1,
-    BLSError
-};
+use crate::types::istanbul::{IstanbulAggregatedSeal, IstanbulMsg};
 use crate::state::Validator;
+use rug::{Integer, integer::Order};
+use bls_crypto::{
+    PublicKey, Signature, BLSError,
+    hash_to_curve::try_and_increment::DIRECT_HASH_TO_G1,
+};
 
-fn prepare_commited_seal(hash: crate::types::header::Hash, round: &Integer) -> Vec<u8> {
-    return itertools::concat(vec![
-        hash.to_vec(),
-        round.to_digits::<u8>(Order::Msf),
-        vec![crate::types::istanbul::IstanbulMsg::Commit as u8],
-    ]);
+fn prepare_commited_seal(hash: Hash, round: &Integer) -> Vec<u8> {
+    let round_bytes = round.to_digits::<u8>(Order::Msf);
+    let commit_bytes = [IstanbulMsg::Commit as u8];
+
+    [&hash[..], &round_bytes[..], &commit_bytes[..]].concat()
 }
 
 pub fn verify_aggregated_seal(header_hash: Hash, validators: Vec<Validator>, aggregated_seal: IstanbulAggregatedSeal) -> Result<(), BLSError>{
