@@ -82,7 +82,7 @@ impl Header {
         }
     }
 
-    pub fn hash(&self) -> Hash {
+    pub fn hash(&self) -> Result<Hash, Error> {
         if self.extra.len() >= ISTANBUL_EXTRA_VANITY_LENGTH {
             let istanbul_header = istanbul_filtered_header(&self, true);
             if istanbul_header.is_ok() {
@@ -145,10 +145,8 @@ impl FromBytes for Address {
     }
 }
 
-fn rlp_hash(header: &Header) -> Hash {
+fn rlp_hash(header: &Header) -> Result<Hash, Error> {
     let digest = Keccak256::digest(&rlp::encode(header));
-    let mut hash: Hash = Hash::default();
 
-    hash.copy_from_slice(digest.as_slice());
-    hash
+    Ok(slice_as_array_ref!(&digest[..HASH_LENGTH], HASH_LENGTH)?.to_owned())
 }

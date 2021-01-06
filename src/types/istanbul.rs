@@ -1,6 +1,7 @@
 use crate::types::header::Address;
 use crate::traits::default::{FromBytes, DefaultFrom};
 use crate::slice_as_array_ref;
+use crate::errors::Kind;
 use crate::errors::Error;
 use rlp::{DecoderError, Decodable, Rlp, Encodable, RlpStream};
 use rug::{integer::Order, Integer};
@@ -25,15 +26,19 @@ pub enum IstanbulMsg {
     RoundChange
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct IstanbulAggregatedSeal {
     /// Bitmap is a bitmap having an active bit for each validator that signed this block
+    #[serde(with = "crate::serialization::bytes::hexbigint")]
     pub bitmap: Integer,
 
     /// Signature is an aggregated BLS signature resulting from signatures by each validator that signed this block
+    #[serde(with = "crate::serialization::bytes::hexstring")]
     pub signature: Vec<u8>,
 
     /// Round is the round in which the signature was created.
+    #[serde(with = "crate::serialization::bytes::hexbigint")]
     pub round: Integer,
 }
 
@@ -72,18 +77,23 @@ impl Decodable for IstanbulAggregatedSeal {
     }
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct IstanbulExtra {
     /// AddedValidators are the validators that have been added in the block
+    #[serde(with = "crate::serialization::bytes::hexvec")]
     pub added_validators: Vec<Address>,
 
     /// AddedValidatorsPublicKeys are the BLS public keys for the validators added in the block
+    #[serde(with = "crate::serialization::bytes::hexvec")]
     pub added_validators_public_keys: Vec<SerializedPublicKey>,
     
     /// RemovedValidators is a bitmap having an active bit for each removed validator in the block
+    #[serde(with = "crate::serialization::bytes::hexbigint")]
     pub removed_validators: Integer,
 
     /// Seal is an ECDSA signature by the proposer
+    #[serde(with = "crate::serialization::bytes::hexstring")]
     pub seal: Vec<u8>,
 
     /// AggregatedSeal contains the aggregated BLS signature created via IBFT consensus.
@@ -95,12 +105,15 @@ pub struct IstanbulExtra {
 }
 
 impl IstanbulExtra {
-    pub fn from_rlp(bytes: &[u8]) -> Result<Self, DecoderError>{
+    pub fn from_rlp(bytes: &[u8]) -> Result<Self, Error>{
         if bytes.len() < ISTANBUL_EXTRA_VANITY_LENGTH {
-            return Err(DecoderError::Custom("invalid istanbul header extra-data"));
+            return Err(Kind::RlpDecodeError.context(DecoderError::Custom("invalid istanbul header extra-data")).into());
         }
 
-        rlp::decode(&bytes[ISTANBUL_EXTRA_VANITY_LENGTH..])
+        match rlp::decode(&bytes[ISTANBUL_EXTRA_VANITY_LENGTH..]) {
+            Ok(extra) => Ok(extra),
+            Err(err) => Err(Kind::RlpDecodeError.context(err).into()),
+        }
     }
 
     pub fn to_rlp(&self, vanity: &IstanbulExtraVanity) -> Vec<u8> {
@@ -332,10 +345,21 @@ mod tests {
     fn rejects_insufficient_vanity() {
         let bytes = vec![0; ISTANBUL_EXTRA_VANITY_LENGTH-1];
         
-        assert_eq!(
-            IstanbulExtra::from_rlp(&bytes).unwrap_err(),
-            DecoderError::Custom("invalid istanbul header extra-data")
-        );
+        assert!(IstanbulExtra::from_rlp(&bytes).is_err());
+    }
+
+    #[test]
+    fn serializes_and_deserializes_to_json() {
+        for bytes in vec![
+            prepend_vanity(ISTANBUL_EXTRA_TINY),
+            hex::decode(&ISTANBUL_EXTRA_DUMPED).unwrap(),
+        ].iter() {
+            let parsed = IstanbulExtra::from_rlp(&bytes).unwrap();
+            let json_string = serde_json::to_string(&parsed).unwrap();
+            let deserialized_from_json: IstanbulExtra = serde_json::from_str(&json_string).unwrap();
+
+            assert_eq!(parsed, deserialized_from_json);
+        }
     }
 
     fn prepend_vanity(data: &str) -> Vec<u8> {

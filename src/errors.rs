@@ -10,7 +10,10 @@ pub type Error = anomaly::Error<Kind>;
 pub enum Kind {
     /// Invalid data length while converting slice to fixed-size array type
     #[error("invalid data length while converting slice to fixed-size array type ({current} != {expected}")]
-    InvalidDataLength { current: usize, expected: usize }
+    InvalidDataLength { current: usize, expected: usize },
+
+    #[error("rlp decode error")]
+    RlpDecodeError,
 }
 
 impl Kind {

@@ -1,6 +1,7 @@
 use crate::types::header::Header;
 use crate::types::istanbul::{IstanbulExtra, IstanbulExtraVanity,  IstanbulAggregatedSeal};
 use crate::traits::default::FromBytes;
+use crate::errors::Error;
 
 // TODO: This file is temprory holder for those functions, clean this up afterwards
 pub const EPOCH_SIZE: u64 = 17280;
@@ -57,7 +58,7 @@ pub fn find_epoch_block_number(number: u64, epoch_size: u64) -> u64 {
     epoch_block_number
 }
 
-pub fn istanbul_filtered_header(header: &Header, keep_seal: bool) -> Result<Header, rlp::DecoderError> {
+pub fn istanbul_filtered_header(header: &Header, keep_seal: bool) -> Result<Header, Error> {
     let mut new_header = header.clone();
 
     let mut extra = IstanbulExtra::from_rlp(&new_header.extra)?;

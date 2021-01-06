@@ -11,7 +11,7 @@ pub(crate) mod hexstring {
     {
     	let s: &str = Deserialize::deserialize(deserializer)?;
         if s.len() <= 2 || !s.starts_with("0x"){
-            return Err(D::Error::custom(format!("hex string should start with '0x', got: {}", s)));
+            return T::from_hex(Vec::new()).map_err(D::Error::custom);
         }
 
 	T::from_hex(&s[2..]).map_err(D::Error::custom)
@@ -23,10 +23,12 @@ pub(crate) mod hexstring {
         S: Serializer,
         T: AsRef<[u8]>,
     {
-        let prefix = "0x".to_string();
         let hex_string = hex::encode(value.as_ref());
+        if hex_string.len() == 0 {
+            return serializer.serialize_str("");
+        }
 
-        serializer.serialize_str(&(prefix + &hex_string))
+        serializer.serialize_str(&(String::from("0x") + &hex_string))
     }
 }
 
@@ -58,7 +60,6 @@ pub(crate) mod hexnum {
     }
 }
 
-// TODO: isn't there a nice trait for from_str_radix and rug::Integer?
 pub(crate) mod hexbigint {
     use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
     use rug::Integer;
@@ -82,5 +83,47 @@ pub(crate) mod hexbigint {
         T: std::fmt::LowerHex,
     {
         format!("0x{:x}", value).serialize(serializer)
+    }
+}
+
+pub(crate) mod hexvec {
+    use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
+    use crate::traits::default::FromBytes;
+
+    /// Deserialize vector into Vec<T>
+    pub(crate) fn deserialize<'de, D, T>(deserializer: D) -> Result<Vec<T>, D::Error>
+        where
+            D: Deserializer<'de>,
+            T: FromBytes + Clone
+    {
+        let items: Vec<String> = Deserialize::deserialize(deserializer)?;
+        let mut out: Vec<T> = Vec::new();
+
+        for item in items {
+            if item.len() <= 2 || !item.starts_with("0x"){
+                return Err(D::Error::custom(format!("hex string should start with '0x', got: {}", item)));
+            }
+
+            match hex::decode(&item[2..]) {
+                Ok(decoded) => match T::from_bytes(&decoded) {
+                    Ok(concrete) => out.push(concrete.to_owned()),
+                    Err(e) => return Err(D::Error::custom(format!("failed to call from_bytes, got: {}", e))),
+                },
+                Err(e) => return Err(D::Error::custom(format!("failed to decode hex data, got: {}", e))),
+            }
+        }
+        Ok(out)
+    }
+
+    /// Serialize from &[T] into vector of strings
+    pub(crate) fn serialize<S, T>(value: &[T], serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: AsRef<[u8]>
+    {
+        value.iter()
+            .map(|v| format!("0x{}", hex::encode(v)))
+            .collect::<Vec<String>>()
+            .serialize(serializer)
     }
 }

@@ -70,7 +70,7 @@ async fn main(){
 
             state.epoch = i as u64; // TODO
             state.number += EPOCH_SIZE; //TODO
-            state.hash = header.hash();
+            state.hash = header.hash().unwrap();
         } else {
             println!("EPOCH BLOCK NUM: {:?} ---- FAILED", epoch_block_num);
         }
@@ -81,6 +81,6 @@ async fn main(){
     println!("STATE_epoch: {:?}", state.epoch);
     println!("STATE_VALIDATORS: {:?}", state.validators.iter().map(|v| hex::encode(v.address)).collect::<Vec<String>>());
 
-    let verify_result = verify_aggregated_seal(current_block_header.hash(), state.validators, current_block_extra.aggregated_seal);
+    let verify_result = verify_aggregated_seal(current_block_header.hash().unwrap(), state.validators, current_block_extra.aggregated_seal);
     println!("LAST HEADER SEAL VERIFY: {:?}", verify_result);
 }
