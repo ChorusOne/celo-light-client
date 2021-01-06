@@ -1,5 +1,7 @@
-use crate::types::header::{Hash, Address};
-use crate::types::istanbul::SerializedPublicKey;
+use crate::types::header::{Header, Hash, Address};
+use crate::types::istanbul::{IstanbulExtra, SerializedPublicKey};
+use crate::errors::{Error, Kind};
+use crate::istanbul::is_last_block_of_epoch;
 use std::collections::HashMap;
 use rug::Integer;
 
@@ -18,10 +20,10 @@ pub struct State {
 }
 
 impl State {
-    pub fn new() -> Self {
+    pub fn new(epoch: u64) -> Self {
         State {
             validators: Vec::new(),
-            epoch: 0,
+            epoch,
             number: 0,
             hash: Hash::default(),
         }
@@ -65,6 +67,49 @@ impl State {
 
         self.validators = tmp;
         return true;
+    }
+
+    pub fn insert_epoch_header(&mut self, header: &Header) -> Result<(), Error> {
+        if !is_last_block_of_epoch(header.number.to_u64().unwrap(), self.epoch) {
+            return Err(Kind::InvalidChainInsertion.into());
+        }
+
+        self.insert_header(header)
+    }
+
+    fn insert_header(&mut self, header: &Header) -> Result<(), Error>{
+        let extra = IstanbulExtra::from_rlp(&header.extra)?;
+
+        // TODO: ecrecover?
+
+        // convert istanbul validators into a Validator struct
+        let mut validators: Vec<Validator> = Vec::new();
+        if extra.added_validators.len() != extra.added_validators_public_keys.len() {
+            return Err(Kind::InvalidValidatorSetDiff{msg: "error in combining addresses and public keys"}.into());
+        }
+
+        for i in 0..extra.added_validators.len() {
+            validators.push(Validator{
+                address: extra.added_validators.get(i).unwrap().clone(),
+                public_key: extra.added_validators_public_keys.get(i).unwrap().clone(),
+            })
+        }
+
+        // apply the header's changeset
+        let result_remove = self.remove_validators(extra.removed_validators.clone());
+        if !result_remove {
+            return Err(Kind::InvalidValidatorSetDiff{msg: "error in removing the header's removed_validators"}.into());
+        }
+
+        let result_add = self.add_validators(validators);
+        if !result_add {
+            return Err(Kind::InvalidValidatorSetDiff{msg: "error in adding the header's added_validators"}.into());
+        }
+
+        self.number += self.epoch;
+        self.hash = header.hash()?;
+        // TODO: store data to db
+        Ok(())
     }
 }
 
@@ -167,7 +212,7 @@ mod tests {
 
     #[test]
     fn test_add_remove() {
-        let mut state = State::new();
+        let mut state = State::new(123);
         let mut result = state.add_validators(vec![
             Validator{
                 address: bytes_to_address(&vec![0x3 as u8]),
@@ -282,7 +327,7 @@ mod tests {
 
         for test in tests {
             let mut accounts = AccountPool::new();
-            let mut state = State::new();
+            let mut state = State::new(123);
 
             let validators = convert_val_names_to_validators(&mut accounts, test.validators);
             state.add_validators(validators.clone());

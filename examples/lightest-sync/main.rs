@@ -35,7 +35,7 @@ async fn main(){
     let current_block_extra = IstanbulExtra::from_rlp(&current_block_header.extra).unwrap();
 
     // build up state from the genesis block to the latest
-    let mut state = State::new();
+    let mut state = State::new(EPOCH_SIZE);
 
     for (i, epoch_block_num) in firstn(0, current_epoch_number).enumerate() {
         //println!("IS_LAST_BLOCK_OF_EPOCH: {}", is_last_block_of_epoch(epoch_block_num, EPOCH_SIZE));
@@ -45,32 +45,7 @@ async fn main(){
 
         if header.is_ok() {
             println!("EPOCH BLOCK NUM: {:?} ({})", epoch_block_num.clone(), epoch_block_number_hex.clone());
-            let header = header.unwrap();
-
-            let extra = IstanbulExtra::from_rlp(&header.extra).unwrap();
-
-            let mut validators: Vec<Validator> = Vec::new();
-            for i in 0..extra.added_validators.len() {
-                validators.push(Validator{
-                    address: extra.added_validators.get(i).unwrap().clone(),
-                    public_key: extra.added_validators_public_keys.get(i).unwrap().clone(),
-                })
-            }
-
-            assert_eq!(extra.added_validators.len(), validators.len());
-
-            let result_remove = state.remove_validators(extra.removed_validators.clone());
-            let result_add = state.add_validators(validators);
-
-            if !result_remove || !result_add {
-                println!("-----------");
-                println!("EPOCH BLOCK NUM: {:?} ({})", epoch_block_num.clone(), epoch_block_number_hex.clone());
-                return;
-            }
-
-            state.epoch = i as u64; // TODO
-            state.number += EPOCH_SIZE; //TODO
-            state.hash = header.hash().unwrap();
+            state.insert_epoch_header(&header.unwrap());
         } else {
             println!("EPOCH BLOCK NUM: {:?} ---- FAILED", epoch_block_num);
         }

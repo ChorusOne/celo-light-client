@@ -14,6 +14,12 @@ pub enum Kind {
 
     #[error("rlp decode error")]
     RlpDecodeError,
+
+    #[error("invalid validator set diff: {msg}")]
+    InvalidValidatorSetDiff { msg: &'static str },
+
+    #[error("attempted to insert invalid data to chain")]
+    InvalidChainInsertion,
 }
 
 impl Kind {
