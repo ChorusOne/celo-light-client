@@ -1,31 +1,53 @@
 use crate::types::header::{Header, Hash, Address};
 use crate::types::istanbul::{IstanbulExtra, SerializedPublicKey};
 use crate::errors::{Error, Kind};
+use crate::crypto::bls::verify_aggregated_seal;
+use crate::traits::default::Storage;
 use crate::istanbul::is_last_block_of_epoch;
 use std::collections::HashMap;
 use rug::Integer;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Debug)]
 pub struct Validator{
+    #[serde(with = "crate::serialization::bytes::hexstring")]
     pub address: Address,
+
+    #[serde(with = "crate::serialization::bytes::hexstring")]
     pub public_key: SerializedPublicKey,
 }
 
-#[derive(Debug, Clone)]
-pub struct State {
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct StateEntry {
     pub validators: Vec<Validator>, // Set of authorized validators at this moment
     pub epoch: u64, // the number of blocks for each epoch
     pub number: u64, // block number where the snapshot was created
     pub hash: Hash, // block hash where the snapshot was created
 }
 
-impl State {
-    pub fn new(epoch: u64) -> Self {
-        State {
+impl StateEntry {
+    pub fn new() -> Self {
+        Self {
             validators: Vec::new(),
-            epoch,
+            epoch: 0,
             number: 0,
-            hash: Hash::default(),
+            hash: Hash::default()
+        }
+    }
+}
+
+pub struct State<'a> {
+    storage: &'a mut dyn Storage,
+    entry: StateEntry,
+}
+
+impl<'a> State<'a> {
+    pub fn new(epoch: u64, storage: &'a mut dyn Storage) -> Self {
+        let mut entry = StateEntry::new();
+        entry.epoch = epoch;
+        
+        State {
+            storage: storage,
+            entry: entry,
         }
     }
 
@@ -37,13 +59,13 @@ impl State {
         }
 
         // Verify that the validators to add is not already in the valset
-        for v in self.validators.iter() {
+        for v in self.entry.validators.iter() {
             if new_address_map.contains_key(&v.address) {
                 return false;
             }
         }
 
-        self.validators.extend(validators);
+        self.entry.validators.extend(validators);
 
         return true;
     }
@@ -53,34 +75,54 @@ impl State {
             return true;
         }
 
-        if removed_validators.significant_bits() > self.validators.len() as u32 {
+        if removed_validators.significant_bits() > self.entry.validators.len() as u32 {
             return false;
         }
 
         // TODO: this is inneficient due to copies
         let mut tmp: Vec<Validator> = Vec::new();
-        for (i, v) in self.validators.iter().enumerate() {
+        for (i, v) in self.entry.validators.iter().enumerate() {
             if removed_validators.get_bit(i as u32) == false {
                 tmp.push(*v);
             }
         }
 
-        self.validators = tmp;
+        self.entry.validators = tmp;
         return true;
     }
 
     pub fn insert_epoch_header(&mut self, header: &Header) -> Result<(), Error> {
-        if !is_last_block_of_epoch(header.number.to_u64().unwrap(), self.epoch) {
+        if !is_last_block_of_epoch(header.number.to_u64().unwrap(), self.entry.epoch) {
             return Err(Kind::InvalidChainInsertion.into());
+        }
+
+        // check if header is stored in the storage. If so, then update current validator set
+        let key = header.hash()?;
+        if self.storage.contains_key(&key)? {
+            let entry = self.storage.get(&key)?;
+            self.entry = serde_json::from_slice(&entry).unwrap();
+            return Ok(());
         }
 
         self.insert_header(header)
     }
 
+    pub fn verify_header(&self, header: &Header) {
+        //header.number.is
+    }
+
     fn insert_header(&mut self, header: &Header) -> Result<(), Error>{
         let extra = IstanbulExtra::from_rlp(&header.extra)?;
 
-        // TODO: ecrecover?
+        // genesis block is valid dead end
+        if header.number != 0 {
+            let current_block_extra = IstanbulExtra::from_rlp(&header.extra)?;
+            let validated = verify_aggregated_seal(
+                header.hash()?,
+                self.entry.validators.clone(), // TODO: clone
+                current_block_extra.aggregated_seal
+            );
+        }
 
         // convert istanbul validators into a Validator struct
         let mut validators: Vec<Validator> = Vec::new();
@@ -106,8 +148,24 @@ impl State {
             return Err(Kind::InvalidValidatorSetDiff{msg: "error in adding the header's added_validators"}.into());
         }
 
-        self.number += self.epoch;
-        self.hash = header.hash()?;
+        let entry = StateEntry {
+            validators: self.entry.validators.clone(),
+            epoch: self.entry.epoch,
+            number: self.entry.number + self.entry.epoch, // TODO: this is invalid if block is not epoch
+            hash: header.hash()?
+        };
+
+        let json_string = serde_json::to_string(&entry).unwrap(); // TODO unwrap
+
+        // store header by it's number
+        self.storage.put(
+            entry.hash.as_ref(),
+            json_string.as_ref(),
+        )?;
+
+        // update local state
+        self.entry = entry;
+
         // TODO: store data to db
         Ok(())
     }
@@ -129,6 +187,23 @@ mod tests {
     macro_rules! string_vec {
         ($($x:expr),*) => (vec![$($x.to_string()),*]);
     }
+
+    struct MockStorage{}
+
+    impl Storage for MockStorage {
+        fn put(&mut self, key: &[u8], value: &[u8]) -> Result<Option<Vec<u8>>, Error> {
+            Ok(None)
+        }
+    
+        fn get(&self, key: &[u8]) -> Result<Vec<u8>, Error> {
+            Ok(Vec::new())
+        }
+    
+        fn contains_key(&self, key: &[u8]) -> Result<bool, Error> {
+            Ok(false)
+        }
+    }
+
 
     struct TestValidatorSet {
         validators: Vec<String>,
@@ -212,7 +287,8 @@ mod tests {
 
     #[test]
     fn test_add_remove() {
-        let mut state = State::new(123);
+        let mut storage = MockStorage{};
+        let mut state = State::new(123, &mut storage);
         let mut result = state.add_validators(vec![
             Validator{
                 address: bytes_to_address(&vec![0x3 as u8]),
@@ -234,10 +310,10 @@ mod tests {
         ]);
 
         assert_eq!(result, true);
-        assert_eq!(state.validators.len(), 3);
+        assert_eq!(state.entry.validators.len(), 3);
 
         // verify ordering
-        let current_addresses: Vec<Address> = state.validators.iter().map(|val| val.address).collect();
+        let current_addresses: Vec<Address> = state.entry.validators.iter().map(|val| val.address).collect();
         let expecected_addresses: Vec<Address> = vec![
             bytes_to_address(&vec![0x3 as u8]),
             bytes_to_address(&vec![0x2 as u8]),
@@ -248,17 +324,17 @@ mod tests {
         // remove first validator
         result = state.remove_validators(Integer::from(1));
         assert_eq!(result, true);
-        assert_eq!(state.validators.len(), 2);
+        assert_eq!(state.entry.validators.len(), 2);
 
         // remove second validator
         result = state.remove_validators(Integer::from(2));
         assert_eq!(result, true);
-        assert_eq!(state.validators.len(), 1);
+        assert_eq!(state.entry.validators.len(), 1);
 
         // remove third validator
         result = state.remove_validators(Integer::from(1));
         assert_eq!(result, true);
-        assert_eq!(state.validators.len(), 0);
+        assert_eq!(state.entry.validators.len(), 0);
     }
 
     #[test]
@@ -326,22 +402,23 @@ mod tests {
         ];
 
         for test in tests {
+            let mut storage = MockStorage{};
             let mut accounts = AccountPool::new();
-            let mut state = State::new(123);
+            let mut state = State::new(123, &mut storage);
 
             let validators = convert_val_names_to_validators(&mut accounts, test.validators);
             state.add_validators(validators.clone());
 
             for diff in test.validator_set_diffs {
                 let added_validators = convert_val_names_to_validators(&mut accounts, diff.added_validators);
-                let removed_validators = convert_val_names_to_removed_validators(&mut accounts, &state.validators, diff.removed_validators);
+                let removed_validators = convert_val_names_to_removed_validators(&mut accounts, &state.entry.validators, diff.removed_validators);
 
                 state.remove_validators(removed_validators);
                 state.add_validators(added_validators);
             }
 
             let results = convert_val_names_to_validators(&mut accounts, test.results);
-            assert_eq!(compare(state.validators, results), Ordering::Equal);
+            assert_eq!(compare(state.entry.validators, results), Ordering::Equal);
         }
     }
 

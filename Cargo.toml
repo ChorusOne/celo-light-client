@@ -7,7 +7,6 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-hyper = "0.13.9"
 serde_json = "1.0"
 serde_derive = "1.0"
 serde = "1.0"
@@ -23,9 +22,11 @@ bls-crypto = { git = "https://github.com/celo-org/celo-bls-snark-rs.git"  }
 algebra = { git = "https://github.com/celo-org/zexe", features = ["derive", "bls12_377", "ed_on_bw6_761", "parallel"] }
 
 [dev-dependencies]
+hyper = "0.13.9"
 rand = "0.6"
 rand_core = "0.4"
 tokio = { version = "0.2", features = ["full"] }
+sled = "0.34.6"
 
 [[example]]
 name = "lightest-sync"

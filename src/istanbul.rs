@@ -3,9 +3,6 @@ use crate::types::istanbul::{IstanbulExtra, IstanbulExtraVanity,  IstanbulAggreg
 use crate::traits::default::FromBytes;
 use crate::errors::Error;
 
-// TODO: This file is temprory holder for those functions, clean this up afterwards
-pub const EPOCH_SIZE: u64 = 17280;
-
 pub fn get_epoch_number(number: u64, epoch_size: u64) -> u64 {
     let epoch_number = number / epoch_size;
 
@@ -39,23 +36,23 @@ pub fn get_epoch_first_block_number(epoch_number: u64, epoch_size: u64) -> Optio
     Some(((epoch_number - 1) * epoch_size) + 1)
 }
 
-pub fn get_epoch_last_block_number(epoch_number: u64, epoch_size: u64) -> u64 {
+pub fn get_epoch_last_block_number(epoch_number: u64, epoch_size: u64) -> Option<u64> {
     if epoch_number == 0 {
-        return 0
+        return Some(0)
     }
 
-    let first_block_num = get_epoch_first_block_number(epoch_number, epoch_size).unwrap();
-    first_block_num + (epoch_size - 1)
+    let first_block_num = get_epoch_first_block_number(epoch_number, epoch_size)?;
+    Some(first_block_num + (epoch_size - 1))
 }
 
-pub fn find_epoch_block_number(number: u64, epoch_size: u64) -> u64 {
+pub fn find_epoch_block_number(number: u64, epoch_size: u64) -> Option<u64> {
     let epoch = get_epoch_number(number, epoch_size);
-    let epoch_block_number = get_epoch_last_block_number(epoch-1, epoch_size);
+    let epoch_block_number = get_epoch_last_block_number(epoch-1, epoch_size)?;
     if number == epoch_block_number {
-        get_epoch_last_block_number(epoch-2, epoch_size);
+        return get_epoch_last_block_number(epoch-2, epoch_size);
     }
 
-    epoch_block_number
+    Some(epoch_block_number)
 }
 
 pub fn istanbul_filtered_header(header: &Header, keep_seal: bool) -> Result<Header, Error> {
@@ -71,4 +68,18 @@ pub fn istanbul_filtered_header(header: &Header, keep_seal: bool) -> Result<Head
     new_header.extra = payload;
 
     Ok(new_header)
+}
+
+pub fn epoch_block_num_iter(first_epoch: u64, max_epoch: u64, epoch_size: u64) -> impl std::iter::Iterator<Item = u64> {
+    let mut current_epoch = first_epoch;
+    std::iter::from_fn(move || {
+        let result;
+        if current_epoch < max_epoch {
+            result = get_epoch_last_block_number(current_epoch, epoch_size);
+            current_epoch += 1
+        } else {
+            result = None
+        }
+        result
+    })
 }

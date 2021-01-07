@@ -9,3 +9,9 @@ pub trait DefaultFrom {
 pub trait FromBytes {
     fn from_bytes(data: &[u8]) -> Result<&Self, Error>;
 }
+
+pub trait Storage {
+    fn put(&mut self, key: &[u8], value: &[u8]) -> Result<Option<Vec<u8>>, Error>;
+    fn get(&self, key: &[u8]) -> Result<Vec<u8>, Error>;
+    fn contains_key(&self, key: &[u8]) -> Result<bool, Error>;
+}
