@@ -1,10 +1,11 @@
 use crate::istanbul::istanbul_filtered_header;
 use crate::types::istanbul::ISTANBUL_EXTRA_VANITY_LENGTH;
 use crate::traits::default::{DefaultFrom, FromBytes};
+use crate::serialization::rlp::{rlp_field_from_bytes, rlp_to_big_int};
 use crate::slice_as_array_ref;
-use crate::errors::Error;
+use crate::errors::{Kind, Error};
 use rug::{integer::Order, Integer};
-use rlp::{Encodable, RlpStream};
+use rlp::{DecoderError, Decodable, Rlp, Encodable, RlpStream};
 use sha3::{Digest, Keccak256};
 
 /// HASH_LENGTH represents the number of bytes used in a header hash
@@ -82,6 +83,17 @@ impl Header {
         }
     }
 
+    pub fn from_rlp(bytes: &[u8]) -> Result<Self, Error>{
+        match rlp::decode(&bytes) {
+            Ok(header) => Ok(header),
+            Err(err) => Err(Kind::RlpDecodeError.context(err).into()),
+        }
+    }
+
+    pub fn to_rlp(&self) -> Vec<u8> {
+        rlp::encode(self)
+    }
+
     pub fn hash(&self) -> Result<Hash, Error> {
         if self.extra.len() >= ISTANBUL_EXTRA_VANITY_LENGTH {
             let istanbul_header = istanbul_filtered_header(&self, true);
@@ -130,9 +142,35 @@ impl Encodable for Header {
     }
 }
 
+impl Decodable for Header {
+        fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
+            Ok(Header{
+                parent_hash: rlp_field_from_bytes(rlp, 0)?,
+                coinbase: rlp_field_from_bytes(rlp, 1)?,
+                root: rlp_field_from_bytes(rlp, 2)?,
+                tx_hash: rlp_field_from_bytes(rlp, 3)?,
+                receipt_hash: rlp_field_from_bytes(rlp, 4)?,
+                bloom: rlp_field_from_bytes(rlp, 5)?,
+                number: rlp_to_big_int(rlp, 6)?,
+                gas_used: rlp.val_at(7)?,
+                time: rlp.val_at(8)?,
+                extra: rlp.val_at(9)?,
+            })
+        }
+}
+
 impl DefaultFrom for Bloom {
     fn default() -> Self {
         [0; BLOOM_BYTE_LENGTH]
+    }
+}
+
+impl FromBytes for Bloom {
+    fn from_bytes(data: &[u8]) -> Result<&Bloom, Error> {
+        slice_as_array_ref!(
+            &data[..BLOOM_BYTE_LENGTH],
+            BLOOM_BYTE_LENGTH
+        )
     }
 }
 
@@ -149,4 +187,63 @@ fn rlp_hash(header: &Header) -> Result<Hash, Error> {
     let digest = Keccak256::digest(&rlp::encode(header));
 
     Ok(slice_as_array_ref!(&digest[..HASH_LENGTH], HASH_LENGTH)?.to_owned())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const HEADER_WITH_EMPTY_EXTRA: &str = "f901a6a07285abd5b24742f184ad676e31f6054663b3529bc35ea2fcad8a3e0f642a46f7948888f1f195afa192cfee860698584c030f4c9db1a0ecc60e00b3fe5ce9f6e1a10e5469764daf51f1fe93c22ec3f9a7583a80357217a0d35d334d87c0cc0a202e3756bf81fae08b1575f286c7ee7a3f8df4f0f3afc55da056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421b901000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001825208845c47775c80";
+
+    #[test]
+    fn encodes_header_to_rlp() {
+        let bytes = hex::decode(&HEADER_WITH_EMPTY_EXTRA).unwrap();
+        let header = Header::from_rlp(&bytes).unwrap();
+        let encoded_bytes = header.to_rlp();
+
+        assert_eq!(encoded_bytes, bytes);
+    }
+
+    pub fn to_hash<T>(data: &str) -> T where T: FromBytes + Clone {
+        T::from_bytes(&hex::decode(data).unwrap()).unwrap().to_owned()
+    }
+
+    #[test]
+    fn decodes_header_from_rlp() {
+        let expected = vec![
+            Header {
+                parent_hash: to_hash("7285abd5b24742f184ad676e31f6054663b3529bc35ea2fcad8a3e0f642a46f7"),
+                coinbase: to_hash("8888f1f195afa192cfee860698584c030f4c9db1"),
+                root: to_hash("ecc60e00b3fe5ce9f6e1a10e5469764daf51f1fe93c22ec3f9a7583a80357217"),
+                tx_hash: to_hash("d35d334d87c0cc0a202e3756bf81fae08b1575f286c7ee7a3f8df4f0f3afc55d"),
+                receipt_hash: to_hash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),
+                bloom: Bloom::default(),
+                number: Integer::from(1),
+                gas_used: 0x5208,
+                time: 0x5c47775c,
+                extra: Vec::default(),
+            },
+        ];
+
+        for (bytes, expected_ist) in vec![
+            hex::decode(&HEADER_WITH_EMPTY_EXTRA).unwrap(),
+        ].iter().zip(expected) {
+            let parsed = Header::from_rlp(&bytes).unwrap();
+
+            assert_eq!(parsed, expected_ist);
+        }
+    }
+
+    #[test]
+    fn serializes_and_deserializes_to_json() {
+        for bytes in vec![
+            hex::decode(&HEADER_WITH_EMPTY_EXTRA).unwrap(),
+        ].iter() {
+            let parsed = Header::from_rlp(&bytes).unwrap();
+            let json_string = serde_json::to_string(&parsed).unwrap();
+            let deserialized_from_json: Header = serde_json::from_str(&json_string).unwrap();
+
+            assert_eq!(parsed, deserialized_from_json);
+        }
+    }
 }

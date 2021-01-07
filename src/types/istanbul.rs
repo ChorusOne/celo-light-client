@@ -1,8 +1,8 @@
 use crate::types::header::Address;
 use crate::traits::default::{FromBytes, DefaultFrom};
 use crate::slice_as_array_ref;
-use crate::errors::Kind;
-use crate::errors::Error;
+use crate::errors::{Kind, Error};
+use crate::serialization::rlp::rlp_to_big_int;
 use rlp::{DecoderError, Decodable, Rlp, Encodable, RlpStream};
 use rug::{integer::Order, Integer};
 
@@ -215,12 +215,6 @@ impl DefaultFrom for SerializedPublicKey {
     fn default() -> Self {
         [0; PUBLIC_KEY_LENGTH]
     }
-}
-
-fn rlp_to_big_int(rlp: &Rlp, index: usize) -> Result<Integer, DecoderError> {
-    rlp.at(index)?.decoder().decode_value(
-        |bytes| Ok(Integer::from_digits(bytes, Order::Msf))
-    )
 }
 
 #[cfg(test)]

@@ -67,7 +67,7 @@ pub fn istanbul_filtered_header(header: &Header, keep_seal: bool) -> Result<Head
     }
     extra.aggregated_seal = IstanbulAggregatedSeal::new();
 
-    let payload = extra.to_rlp(IstanbulExtraVanity::from_bytes(&new_header.extra).unwrap()); // todo pass ?
+    let payload = extra.to_rlp(IstanbulExtraVanity::from_bytes(&new_header.extra)?);
     new_header.extra = payload;
 
     Ok(new_header)
