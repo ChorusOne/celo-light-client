@@ -3,6 +3,7 @@ use crate::traits::default::{FromBytes, DefaultFrom};
 use crate::slice_as_array_ref;
 use crate::errors::{Kind, Error};
 use crate::serialization::rlp::rlp_to_big_int;
+use crate::serialization::rlp::rlp_field_from_bytes;
 use rlp::{DecoderError, Decodable, Rlp, Encodable, RlpStream};
 use rug::{integer::Order, Integer};
 
@@ -154,37 +155,25 @@ impl Encodable for IstanbulExtra {
 
 impl Decodable for IstanbulExtra {
         fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
-            let added_validators: Vec<Address> = rlp
+            let added_validators: Result<Vec<Address>, DecoderError> = rlp
                 .at(0)?
                 .iter()
                 .map(|r| {
-                    r.decoder().decode_value(|data| {
-                        match Address::from_bytes(data) {
-                            Ok(address) => Ok(address.to_owned()),
-                            Err(_) => Err(DecoderError::Custom("invalid length data")),
-                        }
-                    })
-                    .unwrap() // TODO: how to get rid of unwrap
-                    .to_owned()
+                    rlp_field_from_bytes(&r)
                 })
                 .collect();
 
-            let added_validators_public_keys: Vec<SerializedPublicKey> = rlp
+            let added_validators_public_keys: Result<Vec<SerializedPublicKey>, DecoderError> = rlp
                 .at(1)?
                 .iter()
                 .map(|r| {
-                    r.decoder().decode_value(|data| {
-                        match SerializedPublicKey::from_bytes(data) {
-                            Ok(pk) => Ok(pk.to_owned()),
-                            Err(_) => Err(DecoderError::Custom("invalid length data")),
-                        }
-                    }).unwrap()
+                    rlp_field_from_bytes(&r)
                 })
                 .collect();
 
             Ok(IstanbulExtra{
-                added_validators,
-                added_validators_public_keys,
+                added_validators: added_validators?,
+                added_validators_public_keys: added_validators_public_keys?,
                 removed_validators: rlp_to_big_int(rlp, 2)?,
                 seal: rlp.val_at(3)?,
                 aggregated_seal: rlp.val_at(4)?,

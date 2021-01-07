@@ -1,7 +1,7 @@
 use crate::istanbul::istanbul_filtered_header;
 use crate::types::istanbul::ISTANBUL_EXTRA_VANITY_LENGTH;
 use crate::traits::default::{DefaultFrom, FromBytes};
-use crate::serialization::rlp::{rlp_field_from_bytes, rlp_to_big_int};
+use crate::serialization::rlp::{rlp_list_field_from_bytes, rlp_to_big_int};
 use crate::slice_as_array_ref;
 use crate::errors::{Kind, Error};
 use rug::{integer::Order, Integer};
@@ -98,7 +98,7 @@ impl Header {
         if self.extra.len() >= ISTANBUL_EXTRA_VANITY_LENGTH {
             let istanbul_header = istanbul_filtered_header(&self, true);
             if istanbul_header.is_ok() {
-                return rlp_hash(&istanbul_header.unwrap());
+                return rlp_hash(&istanbul_header?);
             }
         }
 
@@ -145,12 +145,12 @@ impl Encodable for Header {
 impl Decodable for Header {
         fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
             Ok(Header{
-                parent_hash: rlp_field_from_bytes(rlp, 0)?,
-                coinbase: rlp_field_from_bytes(rlp, 1)?,
-                root: rlp_field_from_bytes(rlp, 2)?,
-                tx_hash: rlp_field_from_bytes(rlp, 3)?,
-                receipt_hash: rlp_field_from_bytes(rlp, 4)?,
-                bloom: rlp_field_from_bytes(rlp, 5)?,
+                parent_hash: rlp_list_field_from_bytes(rlp, 0)?,
+                coinbase: rlp_list_field_from_bytes(rlp, 1)?,
+                root: rlp_list_field_from_bytes(rlp, 2)?,
+                tx_hash: rlp_list_field_from_bytes(rlp, 3)?,
+                receipt_hash: rlp_list_field_from_bytes(rlp, 4)?,
+                bloom: rlp_list_field_from_bytes(rlp, 5)?,
                 number: rlp_to_big_int(rlp, 6)?,
                 gas_used: rlp.val_at(7)?,
                 time: rlp.val_at(8)?,
