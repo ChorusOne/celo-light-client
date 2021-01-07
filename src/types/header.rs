@@ -111,22 +111,22 @@ impl Encodable for Header {
         s.begin_list(10);
 
         // parent_hash
-        s.append(&self.parent_hash.to_vec());
+        s.append(&self.parent_hash.as_ref());
 
         // coinbase
-        s.append(&self.coinbase.to_vec()); // TODO: can we do it without conversion?
+        s.append(&self.coinbase.as_ref());
 
         // root
-        s.append(&self.root.to_vec());
+        s.append(&self.root.as_ref());
 
         // tx_hash
-        s.append(&self.tx_hash.to_vec());
+        s.append(&self.tx_hash.as_ref());
 
         // receipt_hash
-        s.append(&self.receipt_hash.to_vec());
+        s.append(&self.receipt_hash.as_ref());
 
         // bloom
-        s.append(&self.bloom.to_vec());
+        s.append(&self.bloom.as_ref());
 
         // number
         s.append(&self.number.to_digits(Order::Msf));

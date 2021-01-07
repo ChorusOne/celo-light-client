@@ -130,13 +130,13 @@ impl Encodable for IstanbulExtra {
         s.begin_list(6);
         s.begin_list(self.added_validators.len());
         for address in self.added_validators.iter() {
-            s.append(&address.to_vec());
+            s.append(&address.as_ref());
         }
 
         // added_validators_public_keys
         s.begin_list(self.added_validators_public_keys.len());
         for address in self.added_validators_public_keys.iter() {
-            s.append(&address.to_vec()); // TODO: can we do it without conversion?
+            s.append(&address.as_ref());
         }
 
         // removed_validators
