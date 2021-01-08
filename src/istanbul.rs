@@ -45,14 +45,18 @@ pub fn get_epoch_last_block_number(epoch_number: u64, epoch_size: u64) -> Option
     Some(first_block_num + (epoch_size - 1))
 }
 
-pub fn find_epoch_block_number(number: u64, epoch_size: u64) -> Option<u64> {
-    let epoch = get_epoch_number(number, epoch_size);
-    let epoch_block_number = get_epoch_last_block_number(epoch-1, epoch_size)?;
-    if number == epoch_block_number {
-        return get_epoch_last_block_number(epoch-2, epoch_size);
-    }
-
-    Some(epoch_block_number)
+pub fn epoch_block_num_iter(first_epoch: u64, max_epoch: u64, epoch_size: u64) -> impl std::iter::Iterator<Item = u64> {
+    let mut current_epoch = first_epoch;
+    std::iter::from_fn(move || {
+        let result;
+        if current_epoch < max_epoch {
+            result = get_epoch_last_block_number(current_epoch, epoch_size);
+            current_epoch += 1
+        } else {
+            result = None
+        }
+        result
+    })
 }
 
 pub fn istanbul_filtered_header(header: &Header, keep_seal: bool) -> Result<Header, Error> {
@@ -70,20 +74,60 @@ pub fn istanbul_filtered_header(header: &Header, keep_seal: bool) -> Result<Head
     Ok(new_header)
 }
 
-pub fn epoch_block_num_iter(first_epoch: u64, max_epoch: u64, epoch_size: u64) -> impl std::iter::Iterator<Item = u64> {
-    let mut current_epoch = first_epoch;
-    std::iter::from_fn(move || {
-        let result;
-        if current_epoch < max_epoch {
-            result = get_epoch_last_block_number(current_epoch, epoch_size);
-            current_epoch += 1
-        } else {
-            result = None
-        }
-        result
-    })
-}
-
 pub fn min_quorum_size(total_validators: usize) -> usize {
     return ((2.0*(total_validators as f64) / 3.0) as f64).ceil() as usize
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn validates_quorum_size_math() {
+        for (validator_set_size, expected_min_quorum_size) in vec![
+            (1 as usize, 1 as usize),
+            (2, 2),
+            (3, 2),
+            (4, 3),
+            (5, 4),
+            (6, 4),
+            (7, 5),
+        ].iter() {
+            assert_eq!(
+                min_quorum_size(*validator_set_size),
+                *expected_min_quorum_size
+            );
+        }
+    }
+
+    #[test]
+    fn consumes_epoch_block_iterator() {
+        for (input, expected) in vec![
+            ((0, 5, 2), vec![0, 2, 4, 6, 8]),
+            ((5, 5, 2), Vec::new()),
+            ((3, 5, 2), vec![6, 8]),
+        ] {
+            let epochs: Vec<u64> = epoch_block_num_iter(input.0, input.1, input.2).into_iter().collect();
+
+            assert_eq!(epochs, expected);
+        }
+    }
+
+    #[test]
+    fn validates_epoch_math() {
+        assert_eq!(
+            vec![get_epoch_number(0, 3), get_epoch_number(3, 3), get_epoch_number(4, 3)],
+            vec![0, 1, 2]
+        );
+
+        assert_eq!(
+            vec![get_epoch_first_block_number(0, 3), get_epoch_first_block_number(9, 3)],
+            vec![None, Some(25)]
+        );
+
+        assert_eq!(
+            vec![get_epoch_last_block_number(0, 3), get_epoch_last_block_number(9, 3)],
+            vec![Some(0), Some(27)]
+        );
+    }
 }

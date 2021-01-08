@@ -1,12 +1,12 @@
 extern crate sled;
 
-use sled::{Db};
+use sled::Db;
 use celo::Error;
 use celo::Kind;
 use celo::Storage;
 
 pub struct ExampleStorage {
-    db: sled::Db,
+    db: Db,
 }
 
 impl ExampleStorage {
@@ -32,7 +32,6 @@ impl Storage for ExampleStorage {
                 &result.unwrap_or_default().unwrap_or_default()
             ).to_vec()
         )
-        //Ok(Vec::new())
     }
 
     fn contains_key(&self, key: &[u8]) -> Result<bool, Error> {
