@@ -20,6 +20,21 @@ pub enum Kind {
 
     #[error("attempted to insert invalid data to chain")]
     InvalidChainInsertion,
+
+    #[error("aggregated seal does not aggregate enough seals, num_seals: {current}, minimum quorum size: {expected}")]
+    MissingSeals{ current: usize, expected: usize },
+
+    #[error("BLS verify error")]
+    BlsVerifyError,
+
+    #[error("BLS invalid signature")]
+    BlsInvalidSignature,
+
+    #[error("BLS invalid public key")]
+    BlsInvalidPublicKey,
+
+    #[error("JSON serialization issue")]
+    JsonSerializationIssue,
 }
 
 impl Kind {

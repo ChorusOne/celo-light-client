@@ -2,11 +2,36 @@ use crate::algebra::CanonicalDeserialize;
 use crate::types::header::Hash;
 use crate::types::istanbul::{IstanbulAggregatedSeal, IstanbulMsg};
 use crate::state::Validator;
+use crate::errors::{Error, Kind};
 use rug::{Integer, integer::Order};
 use bls_crypto::{
-    PublicKey, Signature, BLSError,
+    PublicKey, Signature,
     hash_to_curve::try_and_increment::DIRECT_HASH_TO_G1,
 };
+
+pub fn verify_aggregated_seal(header_hash: Hash, validators: Vec<Validator>, aggregated_seal: IstanbulAggregatedSeal) -> Result<(), Error>{
+    let proposal_seal = prepare_commited_seal(header_hash, &aggregated_seal.round);
+    let expected_quorum_size = crate::state::min_quorum_size(&validators);
+
+    // Find which public keys signed from the provided validator set
+    let public_keys = validators.iter()
+        .enumerate()
+        .filter(|(i, _)| aggregated_seal.bitmap.get_bit(*i as u32))
+        .map(|(_, validator)| deserialize_pub_key(&validator.public_key))
+        .collect::<Result<Vec<PublicKey>, Error>>()?;
+
+    if public_keys.len() < expected_quorum_size {
+        return Err(Kind::MissingSeals{current: public_keys.len(), expected: expected_quorum_size}.into());
+    }
+
+    let sig = deserialize_signature(&aggregated_seal.signature)?;
+    let apk = PublicKey::aggregate(public_keys);
+
+    match apk.verify(&proposal_seal, &[], &sig, &*DIRECT_HASH_TO_G1) {
+        Ok(_) => Ok(()),
+        Err(_) => Err(Kind::BlsVerifyError.into())
+    }
+}
 
 fn prepare_commited_seal(hash: Hash, round: &Integer) -> Vec<u8> {
     let round_bytes = round.to_digits::<u8>(Order::Msf);
@@ -15,23 +40,16 @@ fn prepare_commited_seal(hash: Hash, round: &Integer) -> Vec<u8> {
     [&hash[..], &round_bytes[..], &commit_bytes[..]].concat()
 }
 
-pub fn verify_aggregated_seal(header_hash: Hash, validators: Vec<Validator>, aggregated_seal: IstanbulAggregatedSeal) -> Result<(), BLSError>{
-    let proposal_seal = prepare_commited_seal(header_hash, &aggregated_seal.round);
-
-    // Find which public keys signed from the provided validator set
-    let public_keys: Vec<PublicKey> = validators.iter()
-        .enumerate()
-        .filter(|(i, _)| aggregated_seal.bitmap.get_bit(*i as u32))
-        .map(|(_, validator)| PublicKey::deserialize(&*validator.public_key.to_vec()).unwrap())
-        .collect();
-
-    if (public_keys.len() as u64) < crate::state::min_quorum_size(&validators) {
-        panic!("Aggregated seal does not aggregate enough seals");
+fn deserialize_signature(signature: &[u8]) -> Result<Signature, Error> {
+    match Signature::deserialize(signature) {
+        Ok(sig) => Ok(sig),
+        Err(_) => Err(Kind::BlsInvalidSignature.into()),
     }
+}
 
-    let try_and_increment = &*DIRECT_HASH_TO_G1;
-    let sig = Signature::deserialize(aggregated_seal.signature.as_slice()).unwrap();
-    let apk = PublicKey::aggregate(public_keys);
-    
-    apk.verify(&proposal_seal, &[], &sig, try_and_increment)
+fn deserialize_pub_key(key: &[u8]) -> Result<PublicKey, Error> {
+    match PublicKey::deserialize(key) {
+        Ok(pub_key) => Ok(pub_key),
+        Err(_) => Err(Kind::BlsInvalidPublicKey.into()),
+    }
 }

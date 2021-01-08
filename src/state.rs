@@ -33,6 +33,20 @@ impl StateEntry {
             hash: Hash::default()
         }
     }
+
+    pub fn from_json(bytes: &[u8]) -> Result<Self, Error> {
+        match serde_json::from_slice(&bytes) {
+            Ok(entry) => Ok(entry),
+            Err(e) => Err(Kind::JsonSerializationIssue.context(e).into())
+        }
+    }
+
+    pub fn to_json(&self) -> Result<String, Error> {
+        match serde_json::to_string(&self) {
+            Ok(data) => Ok(data),
+            Err(e) => Err(Kind::JsonSerializationIssue.context(e).into())
+        }
+    }
 }
 
 pub struct State<'a> {
@@ -100,7 +114,7 @@ impl<'a> State<'a> {
         let key = header.hash()?;
         if self.storage.contains_key(&key)? {
             let entry = self.storage.get(&key)?;
-            self.entry = serde_json::from_slice(&entry).unwrap();
+            self.entry = StateEntry::from_json(&entry)?;
             return Ok(());
         }
 
@@ -155,7 +169,7 @@ impl<'a> State<'a> {
             hash: header.hash()?
         };
 
-        let json_string = serde_json::to_string(&entry).unwrap(); // TODO unwrap
+        let json_string = entry.to_json()?;
 
         // store header by it's number
         self.storage.put(
@@ -171,8 +185,8 @@ impl<'a> State<'a> {
     }
 }
 
-pub fn min_quorum_size(validators: &[Validator]) -> u64 {
-    return ((2.0*(validators.len() as f64) / 3.0) as f64).ceil() as u64
+pub fn min_quorum_size(validators: &[Validator]) -> usize {
+    return ((2.0*(validators.len() as f64) / 3.0) as f64).ceil() as usize
 }
 
 #[cfg(test)]
@@ -191,19 +205,18 @@ mod tests {
     struct MockStorage{}
 
     impl Storage for MockStorage {
-        fn put(&mut self, key: &[u8], value: &[u8]) -> Result<Option<Vec<u8>>, Error> {
+        fn put(&mut self, _key: &[u8], _value: &[u8]) -> Result<Option<Vec<u8>>, Error> {
             Ok(None)
         }
     
-        fn get(&self, key: &[u8]) -> Result<Vec<u8>, Error> {
+        fn get(&self, _key: &[u8]) -> Result<Vec<u8>, Error> {
             Ok(Vec::new())
         }
     
-        fn contains_key(&self, key: &[u8]) -> Result<bool, Error> {
+        fn contains_key(&self, _key: &[u8]) -> Result<bool, Error> {
             Ok(false)
         }
     }
-
 
     struct TestValidatorSet {
         validators: Vec<String>,
