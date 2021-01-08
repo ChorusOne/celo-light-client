@@ -12,6 +12,8 @@ use relayer::*;
 // TODO: This file is temprory holder for those functions, clean this up afterwards
 pub const EPOCH_SIZE: u64 = 17280;
 
+pub const VALIDATE_ALL_HEADERS: bool = false;
+
 extern crate log;
 use log::{info, error};
 
@@ -48,12 +50,17 @@ async fn main(){
         let header = relayer.get_block_header_by_number(&epoch_block_number_hex).await;
 
         if header.is_ok() {
-            match state.insert_epoch_header(&header.unwrap()) {
+            match state.insert_epoch_header(&header.unwrap(), VALIDATE_ALL_HEADERS) {
                 Ok(_) => info!("[{}/{}] Inserted epoch header: {}", epoch, current_epoch_number, epoch_block_number_hex),
                 Err(e) => error!("Failed to insert epoch header {}: {}", epoch_block_number_hex, e)
             }
         } else {
             error!("Failed to fetch block header num: {}", epoch_block_number_hex);
         }
+    }
+
+    match state.verify_header(&current_block_header) {
+        Ok(_) => info!("Succesfully validated latest header against local state: {}", current_block_header.number),
+        Err(e) => error!("Failed to validate latest header against local state: {}", e)
     }
 }

@@ -104,19 +104,28 @@ impl<'a> State<'a> {
             return false;
         }
 
-        // TODO: this is inneficient due to copies
-        let mut tmp: Vec<Validator> = Vec::new();
-        for (i, v) in self.entry.validators.iter().enumerate() {
-            if removed_validators.get_bit(i as u32) == false {
-                tmp.push(*v);
-            }
-        }
+        let filtered_validators: Vec<Validator> = self.entry.validators.iter()
+            .enumerate()
+            .filter(|(i, _)| removed_validators.get_bit(*i as u32) == false)
+            .map(|(_, v)| v.to_owned())
+            .collect();
 
-        self.entry.validators = tmp;
+        self.entry.validators = filtered_validators;
+
         return true;
     }
 
-    pub fn insert_epoch_header(&mut self, header: &Header) -> Result<(), Error> {
+    pub fn verify_header(&self, header: &Header) -> Result<(), Error> {
+        let extra = IstanbulExtra::from_rlp(&header.extra)?;
+
+        verify_aggregated_seal(
+            header.hash()?,
+            &self.entry.validators,
+            extra.aggregated_seal
+        )
+    }
+
+    pub fn insert_epoch_header(&mut self, header: &Header, verify: bool) -> Result<(), Error> {
         if !is_last_block_of_epoch(header.number.to_u64().unwrap(), self.entry.epoch) {
             return Err(Kind::InvalidChainInsertion.into());
         }
@@ -129,20 +138,15 @@ impl<'a> State<'a> {
             return Ok(());
         }
 
-        self.insert_header(header)
+        self.insert_header(header, verify)
     }
 
-    fn insert_header(&mut self, header: &Header) -> Result<(), Error>{
+    fn insert_header(&mut self, header: &Header, verify: bool) -> Result<(), Error>{
         let extra = IstanbulExtra::from_rlp(&header.extra)?;
 
         // genesis block is valid dead end
-        if header.number != 0 {
-            let current_block_extra = IstanbulExtra::from_rlp(&header.extra)?;
-            verify_aggregated_seal(
-                header.hash()?,
-                &self.entry.validators,
-                current_block_extra.aggregated_seal
-            )?;
+        if verify && header.number != 0 {
+            self.verify_header(&header)?
         }
 
         // convert istanbul validators into a Validator struct
@@ -195,10 +199,6 @@ impl<'a> State<'a> {
 
         Ok(())
     }
-
-    //pub fn verify_header(&self, header: &Header) {
-        ////header.number.is
-    //}
 }
 
 #[cfg(test)]
