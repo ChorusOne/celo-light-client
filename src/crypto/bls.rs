@@ -1,6 +1,7 @@
 use crate::algebra::CanonicalDeserialize;
 use crate::types::header::Hash;
 use crate::types::istanbul::{IstanbulAggregatedSeal, IstanbulMsg};
+use crate::istanbul::min_quorum_size;
 use crate::state::Validator;
 use crate::errors::{Error, Kind};
 use rug::{Integer, integer::Order};
@@ -9,9 +10,9 @@ use bls_crypto::{
     hash_to_curve::try_and_increment::DIRECT_HASH_TO_G1,
 };
 
-pub fn verify_aggregated_seal(header_hash: Hash, validators: Vec<Validator>, aggregated_seal: IstanbulAggregatedSeal) -> Result<(), Error>{
+pub fn verify_aggregated_seal(header_hash: Hash, validators: &[Validator], aggregated_seal: IstanbulAggregatedSeal) -> Result<(), Error>{
     let proposal_seal = prepare_commited_seal(header_hash, &aggregated_seal.round);
-    let expected_quorum_size = crate::state::min_quorum_size(&validators);
+    let expected_quorum_size = min_quorum_size(validators.len());
 
     // Find which public keys signed from the provided validator set
     let public_keys = validators.iter()

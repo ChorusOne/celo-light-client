@@ -20,11 +20,11 @@ impl Relayer {
         }
     }
 
-    pub async fn get_block_header_by_number(&self, num: String) -> Result<Header, Box<dyn std::error::Error>> {
+    pub async fn get_block_header_by_number(&self, hex_num: &str) -> Result<Header, Box<dyn std::error::Error>> {
         let req = json!({
             "jsonrpc": "2.0",
             "method": "eth_getBlockByNumber",
-            "params": [num, true],
+            "params": [hex_num, true],
             "id": 1,
         });
 

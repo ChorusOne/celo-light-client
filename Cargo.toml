@@ -22,11 +22,13 @@ bls-crypto = { git = "https://github.com/celo-org/celo-bls-snark-rs.git"  }
 algebra = { git = "https://github.com/celo-org/zexe", features = ["derive", "bls12_377", "ed_on_bw6_761", "parallel"] }
 
 [dev-dependencies]
+env_logger = "0.8.2"
 hyper = "0.13.9"
 rand = "0.6"
 rand_core = "0.4"
 tokio = { version = "0.2", features = ["full"] }
 sled = "0.34.6"
+log = "0.4"
 
 [[example]]
 name = "lightest-sync"

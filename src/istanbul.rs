@@ -83,3 +83,7 @@ pub fn epoch_block_num_iter(first_epoch: u64, max_epoch: u64, epoch_size: u64) -
         result
     })
 }
+
+pub fn min_quorum_size(total_validators: usize) -> usize {
+    return ((2.0*(total_validators as f64) / 3.0) as f64).ceil() as usize
+}

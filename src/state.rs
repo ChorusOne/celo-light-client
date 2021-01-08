@@ -60,8 +60,8 @@ impl<'a> State<'a> {
         entry.epoch = epoch;
         
         State {
-            storage: storage,
-            entry: entry,
+            storage,
+            entry
         }
     }
 
@@ -84,7 +84,7 @@ impl<'a> State<'a> {
         return true;
     }
 
-    pub fn remove_validators(&mut self, removed_validators: Integer) -> bool {
+    pub fn remove_validators(&mut self, removed_validators: &Integer) -> bool {
         if removed_validators.significant_bits() == 0 {
             return true;
         }
@@ -121,21 +121,17 @@ impl<'a> State<'a> {
         self.insert_header(header)
     }
 
-    pub fn verify_header(&self, header: &Header) {
-        //header.number.is
-    }
-
     fn insert_header(&mut self, header: &Header) -> Result<(), Error>{
         let extra = IstanbulExtra::from_rlp(&header.extra)?;
 
         // genesis block is valid dead end
         if header.number != 0 {
             let current_block_extra = IstanbulExtra::from_rlp(&header.extra)?;
-            let validated = verify_aggregated_seal(
+            verify_aggregated_seal(
                 header.hash()?,
-                self.entry.validators.clone(), // TODO: clone
+                &self.entry.validators,
                 current_block_extra.aggregated_seal
-            );
+            )?;
         }
 
         // convert istanbul validators into a Validator struct
@@ -146,13 +142,13 @@ impl<'a> State<'a> {
 
         for i in 0..extra.added_validators.len() {
             validators.push(Validator{
-                address: extra.added_validators.get(i).unwrap().clone(),
-                public_key: extra.added_validators_public_keys.get(i).unwrap().clone(),
+                address: extra.added_validators[i].clone(),
+                public_key: extra.added_validators_public_keys[i].clone(),
             })
         }
 
         // apply the header's changeset
-        let result_remove = self.remove_validators(extra.removed_validators.clone());
+        let result_remove = self.remove_validators(&extra.removed_validators);
         if !result_remove {
             return Err(Kind::InvalidValidatorSetDiff{msg: "error in removing the header's removed_validators"}.into());
         }
@@ -180,13 +176,12 @@ impl<'a> State<'a> {
         // update local state
         self.entry = entry;
 
-        // TODO: store data to db
         Ok(())
     }
-}
 
-pub fn min_quorum_size(validators: &[Validator]) -> usize {
-    return ((2.0*(validators.len() as f64) / 3.0) as f64).ceil() as usize
+    //pub fn verify_header(&self, header: &Header) {
+        ////header.number.is
+    //}
 }
 
 #[cfg(test)]
@@ -335,17 +330,17 @@ mod tests {
         assert_eq!(current_addresses, expecected_addresses);
 
         // remove first validator
-        result = state.remove_validators(Integer::from(1));
+        result = state.remove_validators(&Integer::from(1));
         assert_eq!(result, true);
         assert_eq!(state.entry.validators.len(), 2);
 
         // remove second validator
-        result = state.remove_validators(Integer::from(2));
+        result = state.remove_validators(&Integer::from(2));
         assert_eq!(result, true);
         assert_eq!(state.entry.validators.len(), 1);
 
         // remove third validator
-        result = state.remove_validators(Integer::from(1));
+        result = state.remove_validators(&Integer::from(1));
         assert_eq!(result, true);
         assert_eq!(state.entry.validators.len(), 0);
     }
@@ -426,7 +421,7 @@ mod tests {
                 let added_validators = convert_val_names_to_validators(&mut accounts, diff.added_validators);
                 let removed_validators = convert_val_names_to_removed_validators(&mut accounts, &state.entry.validators, diff.removed_validators);
 
-                state.remove_validators(removed_validators);
+                state.remove_validators(&removed_validators);
                 state.add_validators(added_validators);
             }
 
