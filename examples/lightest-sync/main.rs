@@ -20,25 +20,30 @@ async fn main(){
     env_logger::init();
 
     // setup relayer
+    info!("Setting up relayer");
     let addr = "http://127.0.0.1:8545".to_string();
     let relayer: Relayer = Relayer::new(addr.clone());
 
     // setup state container
+    info!("Setting up storage");
     let mut storage = storage::ExampleStorage::new("./local.db");
     let mut state = State::new(EPOCH_SIZE, &mut storage);
 
-    log::set_max_level(log::LevelFilter::Debug);
+    info!("Restoring previous state from DB (if applicable)");
+    let first_epoch: u64 = state.restore().unwrap_or_default();
+
     info!("Fetching latest block header from: {}", addr);
     let current_block_header: Header = relayer.get_block_header_by_number("latest").await.unwrap();
     let current_epoch_number: u64 = get_epoch_number(current_block_header.number.to_u64().unwrap(), EPOCH_SIZE);
 
     info!(
-        "Syncing epoch headers up to epoch num: {} (last header num: {}, epoch size: {})",
-        current_epoch_number, current_block_header.number, EPOCH_SIZE
+        "Syncing epoch headers from {} to epoch num: {} (last header num: {}, epoch size: {})",
+        first_epoch, current_epoch_number, current_block_header.number, EPOCH_SIZE
     );
 
     // build up state from the genesis block to the latest
-    for (epoch, epoch_block_num) in epoch_block_num_iter(0, current_epoch_number, EPOCH_SIZE).enumerate() {
+    for (i, epoch_block_num) in epoch_block_num_iter(first_epoch, current_epoch_number, EPOCH_SIZE).enumerate() {
+        let epoch = i as u64 + first_epoch;
         let epoch_block_number_hex = format!("0x{:x}", epoch_block_num);
         let header = relayer.get_block_header_by_number(&epoch_block_number_hex).await;
 

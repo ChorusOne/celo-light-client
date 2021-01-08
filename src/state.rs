@@ -3,9 +3,11 @@ use crate::types::istanbul::{IstanbulExtra, SerializedPublicKey};
 use crate::errors::{Error, Kind};
 use crate::crypto::bls::verify_aggregated_seal;
 use crate::traits::default::Storage;
-use crate::istanbul::is_last_block_of_epoch;
+use crate::istanbul::{is_last_block_of_epoch, get_epoch_number};
 use std::collections::HashMap;
 use rug::Integer;
+
+const LAST_ENTRY_HASH_KEY: &str = "last_entry_hash";
 
 #[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Debug)]
 pub struct Validator{
@@ -63,6 +65,15 @@ impl<'a> State<'a> {
             storage,
             entry
         }
+    }
+
+    pub fn restore(&mut self) -> Result <u64, Error> {
+        let last_hash = self.storage.get(LAST_ENTRY_HASH_KEY.as_bytes())?;
+        let bytes = self.storage.get(&last_hash)?;
+
+        self.entry = StateEntry::from_json(&bytes)?;
+
+        Ok(get_epoch_number(self.entry.number, self.entry.epoch))
     }
 
     pub fn add_validators(&mut self, validators: Vec<Validator>) -> bool {
@@ -175,6 +186,12 @@ impl<'a> State<'a> {
 
         // update local state
         self.entry = entry;
+
+        // update last entry marker
+        self.storage.put(
+            LAST_ENTRY_HASH_KEY.as_bytes(),
+            self.entry.hash.as_ref()
+        )?;
 
         Ok(())
     }
