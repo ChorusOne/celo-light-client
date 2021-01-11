@@ -51,7 +51,7 @@ async fn main(){
 
         if header.is_ok() {
             match state.insert_epoch_header(&header.unwrap(), VALIDATE_ALL_HEADERS) {
-                Ok(_) => info!("[{}/{}] Inserted epoch header: {}", epoch, current_epoch_number, epoch_block_number_hex),
+                Ok(_) => info!("[{}/{}] Inserted epoch header: {}", epoch+1, current_epoch_number, epoch_block_number_hex),
                 Err(e) => error!("Failed to insert epoch header {}: {}", epoch_block_number_hex, e)
             }
         } else {

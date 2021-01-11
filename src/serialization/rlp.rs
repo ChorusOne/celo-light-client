@@ -1,4 +1,4 @@
-use crate::traits::default::FromBytes;
+use crate::traits::FromBytes;
 use rlp::{DecoderError, Rlp};
 use rug::{integer::Order, Integer};
 

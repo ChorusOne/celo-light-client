@@ -1,6 +1,6 @@
 use crate::istanbul::istanbul_filtered_header;
 use crate::types::istanbul::ISTANBUL_EXTRA_VANITY_LENGTH;
-use crate::traits::default::{DefaultFrom, FromBytes};
+use crate::traits::{DefaultFrom, FromBytes};
 use crate::serialization::rlp::{rlp_list_field_from_bytes, rlp_to_big_int};
 use crate::slice_as_array_ref;
 use crate::errors::{Kind, Error};
@@ -206,10 +206,6 @@ mod tests {
         assert_eq!(encoded_bytes, bytes);
     }
 
-    pub fn to_hash<T>(data: &str) -> T where T: FromBytes + Clone {
-        T::from_bytes(&hex::decode(data).unwrap()).unwrap().to_owned()
-    }
-
     #[test]
     fn decodes_header_from_rlp() {
         let expected = vec![
@@ -266,5 +262,9 @@ mod tests {
 
             assert_eq!(header.hash().unwrap(), rlp_hash(&header).unwrap());
         }
+    }
+
+    pub fn to_hash<T>(data: &str) -> T where T: FromBytes + Clone {
+        T::from_bytes(&hex::decode(data).unwrap()).unwrap().to_owned()
     }
 }

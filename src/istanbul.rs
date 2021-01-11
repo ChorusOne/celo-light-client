@@ -1,7 +1,18 @@
 use crate::types::header::Header;
 use crate::types::istanbul::{IstanbulExtra, IstanbulExtraVanity,  IstanbulAggregatedSeal};
-use crate::traits::default::FromBytes;
+use crate::traits::FromBytes;
 use crate::errors::Error;
+
+// Retrieves the block number within an epoch. The return value will be 1-based.
+// There is a special case if the number == 0. It is basically the last block of the 0th epoch,
+// and should have a value of epoch_size
+pub fn get_number_within_epoch(number: u64, epoch_size: u64) -> u64 {
+    if number % epoch_size == 0 {
+        epoch_size
+    } else {
+        number
+    }
+}
 
 pub fn get_epoch_number(number: u64, epoch_size: u64) -> u64 {
     let epoch_number = number / epoch_size;
@@ -10,20 +21,6 @@ pub fn get_epoch_number(number: u64, epoch_size: u64) -> u64 {
         epoch_number
     } else {
         epoch_number + 1
-    }
-}
-
-pub fn is_last_block_of_epoch(number: u64, epoch_size: u64) -> bool {
-    get_number_within_epoch(number, epoch_size) == epoch_size
-}
-
-// Retrieves the block number within an epoch.  The return value will be 1-based.
-// There is a special case if the number == 0.  It is basically the last block of the 0th epoch, and should have a value of epoch_size
-pub fn get_number_within_epoch(number: u64, epoch_size: u64) -> u64 {
-    if number % epoch_size == 0 {
-        epoch_size
-    } else {
-        number
     }
 }
 
@@ -72,6 +69,10 @@ pub fn istanbul_filtered_header(header: &Header, keep_seal: bool) -> Result<Head
     new_header.extra = payload;
 
     Ok(new_header)
+}
+
+pub fn is_last_block_of_epoch(number: u64, epoch_size: u64) -> bool {
+    get_number_within_epoch(number, epoch_size) == epoch_size
 }
 
 pub fn min_quorum_size(total_validators: usize) -> usize {

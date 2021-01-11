@@ -21,7 +21,7 @@ impl Storage for ExampleStorage {
     fn put(&mut self, key: &[u8], value: &[u8]) -> Result<Option<Vec<u8>>, Error> {
         match self.db.insert(key, value) {
             Ok(value) => Ok(Some(value.unwrap_or_default().to_vec())),
-            Err(e) => Err(Kind::InvalidChainInsertion.into()), // TODO
+            Err(e) => Err(Kind::InvalidChainInsertion.context(e).into()),
         }
     }
 
@@ -37,7 +37,7 @@ impl Storage for ExampleStorage {
     fn contains_key(&self, key: &[u8]) -> Result<bool, Error> {
        match self.db.contains_key(key) {
            Ok(value) => Ok(value),
-           Err(e) => Err(Kind::InvalidChainInsertion.into()), // TODO
+           Err(e) => Err(Kind::InvalidChainInsertion.context(e).into()),
        }
     }
 }

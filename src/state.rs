@@ -1,15 +1,15 @@
 use crate::types::header::{Header, Hash, Address};
 use crate::types::istanbul::{IstanbulExtra, SerializedPublicKey};
 use crate::errors::{Error, Kind};
-use crate::crypto::bls::verify_aggregated_seal;
-use crate::traits::default::Storage;
+use crate::bls::verify_aggregated_seal;
+use crate::traits::Storage;
 use crate::istanbul::{is_last_block_of_epoch, get_epoch_number};
 use std::collections::HashMap;
 use rug::Integer;
 
 const LAST_ENTRY_HASH_KEY: &str = "last_entry_hash";
 
-#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Validator{
     #[serde(with = "crate::serialization::bytes::hexstring")]
     pub address: Address,
@@ -20,7 +20,7 @@ pub struct Validator{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct StateEntry {
-    pub validators: Vec<Validator>, // Set of authorized validators at this moment
+    pub validators: Vec<Validator>, // set of authorized validators at this moment
     pub epoch: u64, // the number of blocks for each epoch
     pub number: u64, // block number where the snapshot was created
     pub hash: Hash, // block hash where the snapshot was created
@@ -138,10 +138,10 @@ impl<'a> State<'a> {
             return Ok(());
         }
 
-        self.insert_header(header, verify)
+        self.store_epoch_header(header, verify)
     }
 
-    fn insert_header(&mut self, header: &Header, verify: bool) -> Result<(), Error>{
+    fn store_epoch_header(&mut self, header: &Header, verify: bool) -> Result<(), Error>{
         let extra = IstanbulExtra::from_rlp(&header.extra)?;
 
         // genesis block is valid dead end
@@ -176,7 +176,7 @@ impl<'a> State<'a> {
         let entry = StateEntry {
             validators: self.entry.validators.clone(),
             epoch: self.entry.epoch,
-            number: self.entry.number + self.entry.epoch, // TODO: this is invalid if block is not epoch
+            number: self.entry.number + self.entry.epoch,
             hash: header.hash()?
         };
 
@@ -204,11 +204,11 @@ impl<'a> State<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sha3::{Digest, Keccak256};
-    use secp256k1::rand::rngs::OsRng;
-    use secp256k1::{PublicKey, Secp256k1, SecretKey};
     use std::{cmp, cmp::Ordering};
-    use crate::traits::default::DefaultFrom;
+    use sha3::{Digest, Keccak256};
+    use secp256k1::{rand::rngs::OsRng, Secp256k1, PublicKey, SecretKey};
+    use crate::traits::{FromBytes, DefaultFrom};
+    use crate::types::header::ADDRESS_LENGTH;
 
     macro_rules! string_vec {
         ($($x:expr),*) => (vec![$($x.to_string()),*]);
@@ -242,7 +242,7 @@ mod tests {
     }
 
     struct AccountPool {
-        pub accounts: HashMap<String, (secp256k1::SecretKey, secp256k1::PublicKey)>,
+        pub accounts: HashMap<String, (SecretKey, PublicKey)>,
     }
 
     impl AccountPool {
@@ -261,53 +261,8 @@ mod tests {
                 self.accounts.insert(account.clone(), generate_key());
             }
 
-            pubkey_to_address(self.accounts.get(&account).unwrap().1) // TODO: see if this is okay
+            pubkey_to_address(self.accounts.get(&account).unwrap().1)
         }
-    }
-
-    fn convert_val_names_to_validators(accounts: &mut AccountPool, val_names: Vec<String>) -> Vec<Validator> {
-        val_names.iter().map(|name| Validator{
-            address: accounts.address(name.to_string()),
-            public_key: SerializedPublicKey::default(),
-        }).collect()
-    }
-
-    fn pubkey_to_address(p: secp256k1::PublicKey) -> Address {
-       let pub_bytes = p.serialize_uncompressed();
-       let digest = &Keccak256::digest(&pub_bytes[1..])[12..];
-       let mut address = Address::default();
-
-       address.copy_from_slice(digest);
-       address
-    }
-
-    fn bytes_to_address(bytes: &[u8]) -> Address {
-        let mut address = [0; 20];
-
-        for (i, byte) in bytes.iter().enumerate() {
-            address[address.len()-i-1] = *byte;
-        }
-        address
-    }
-
-    fn generate_key() -> (SecretKey, PublicKey) {
-        let mut rng = OsRng::new().expect("OsRng");
-        let secp = Secp256k1::new();
-
-        secp.generate_keypair(&mut rng)
-    }
-
-    fn convert_val_names_to_removed_validators(accounts: &mut AccountPool, old_validators: &[Validator], val_names: Vec<String>) -> Integer {
-        let mut bitmap = Integer::from(0);
-        for v in val_names {
-            for j in 0..old_validators.len() {
-                if &accounts.address(v.to_string()) == &old_validators.get(j).unwrap().address {
-                    bitmap.set_bit(j as u32, true);
-                }
-            }
-        }
-
-        bitmap
     }
 
     #[test]
@@ -459,5 +414,46 @@ mod tests {
             .map(|(x, y)| x.address.cmp(&y.address))
             .find(|&ord| ord != cmp::Ordering::Equal)
             .unwrap_or(a.len().cmp(&b.len()))
+    }
+
+    fn pubkey_to_address(p: PublicKey) -> Address {
+       let pub_bytes = p.serialize_uncompressed();
+       let digest = &Keccak256::digest(&pub_bytes[1..])[12..];
+
+       Address::from_bytes(digest).unwrap().to_owned()
+    }
+
+    fn bytes_to_address(bytes: &[u8]) -> Address {
+        let mut v = vec![0x0; ADDRESS_LENGTH - bytes.len()];
+        v.extend_from_slice(bytes);
+
+        Address::from_bytes(&v).unwrap().to_owned()
+    }
+
+    fn generate_key() -> (SecretKey, PublicKey) {
+        let mut rng = OsRng::new().expect("OsRng");
+        let secp = Secp256k1::new();
+
+        secp.generate_keypair(&mut rng)
+    }
+
+    fn convert_val_names_to_validators(accounts: &mut AccountPool, val_names: Vec<String>) -> Vec<Validator> {
+        val_names.iter().map(|name| Validator{
+            address: accounts.address(name.to_string()),
+            public_key: SerializedPublicKey::default(),
+        }).collect()
+    }
+
+    fn convert_val_names_to_removed_validators(accounts: &mut AccountPool, old_validators: &[Validator], val_names: Vec<String>) -> Integer {
+        let mut bitmap = Integer::from(0);
+        for v in val_names {
+            for j in 0..old_validators.len() {
+                if &accounts.address(v.to_string()) == &old_validators.get(j).unwrap().address {
+                    bitmap.set_bit(j as u32, true);
+                }
+            }
+        }
+
+        bitmap
     }
 }

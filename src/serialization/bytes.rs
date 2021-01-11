@@ -88,7 +88,7 @@ pub(crate) mod hexbigint {
 
 pub(crate) mod hexvec {
     use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
-    use crate::traits::default::FromBytes;
+    use crate::traits::FromBytes;
 
     /// Deserialize vector into Vec<T>
     pub(crate) fn deserialize<'de, D, T>(deserializer: D) -> Result<Vec<T>, D::Error>

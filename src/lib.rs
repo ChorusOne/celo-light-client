@@ -2,7 +2,7 @@ pub mod types;
 pub mod serialization;
 pub mod istanbul;
 pub mod state;
-pub mod crypto;
+pub mod bls;
 pub mod traits;
 pub mod macros;
 pub mod errors;
@@ -22,10 +22,12 @@ extern crate algebra;
 extern crate anomaly;
 extern crate thiserror;
 
-pub use types::header::*;
-pub use types::istanbul::*;
+pub use types::{
+    header::*,
+    istanbul::*
+};
 pub use state::*;
 pub use istanbul::*;
-pub use crypto::bls::*;
-pub use traits::default::*;
+pub use bls::*;
+pub use traits::*;
 pub use errors::*;

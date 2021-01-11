@@ -1,5 +1,5 @@
 use crate::types::header::Address;
-use crate::traits::default::{FromBytes, DefaultFrom};
+use crate::traits::{FromBytes, DefaultFrom};
 use crate::slice_as_array_ref;
 use crate::errors::{Kind, Error};
 use crate::serialization::rlp::{rlp_to_big_int, rlp_field_from_bytes};
