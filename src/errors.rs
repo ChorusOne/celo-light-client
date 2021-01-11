@@ -35,6 +35,12 @@ pub enum Kind {
 
     #[error("JSON serialization issue")]
     JsonSerializationIssue,
+
+    #[error("encountered a block with time set in the future")]
+    FutureBlock,
+
+    #[error("unkown error occurred")]
+    Unknown,
 }
 
 impl Kind {

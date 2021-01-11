@@ -4,10 +4,13 @@ use crate::errors::{Error, Kind};
 use crate::bls::verify_aggregated_seal;
 use crate::traits::Storage;
 use crate::istanbul::{is_last_block_of_epoch, get_epoch_number};
+use std::time::{SystemTime, UNIX_EPOCH};
 use std::collections::HashMap;
 use rug::Integer;
 
 const LAST_ENTRY_HASH_KEY: &str = "last_entry_hash";
+
+const ALLOWED_CLOCK_SKEW: u64 = 5;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Validator{
@@ -117,6 +120,16 @@ impl<'a> State<'a> {
 
     pub fn verify_header(&self, header: &Header) -> Result<(), Error> {
         let extra = IstanbulExtra::from_rlp(&header.extra)?;
+
+        let curr_time = match SystemTime::now().duration_since(UNIX_EPOCH) {
+            Ok(t) => t.as_secs(),
+            Err(e) => return Err(Kind::Unknown.context(e).into()),
+        };
+
+	// don't waste time checking blocks from the future
+	if header.time > curr_time + ALLOWED_CLOCK_SKEW {
+            return Err(Kind::FutureBlock.into())
+	}
 
         verify_aggregated_seal(
             header.hash()?,

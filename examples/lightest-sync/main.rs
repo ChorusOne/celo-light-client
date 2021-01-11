@@ -45,13 +45,13 @@ async fn main(){
 
     // build up state from the genesis block to the latest
     for (i, epoch_block_num) in epoch_block_num_iter(first_epoch, current_epoch_number, EPOCH_SIZE).enumerate() {
-        let epoch = i as u64 + first_epoch;
+        let epoch = 1 + i as u64 + first_epoch;
         let epoch_block_number_hex = format!("0x{:x}", epoch_block_num);
         let header = relayer.get_block_header_by_number(&epoch_block_number_hex).await;
 
         if header.is_ok() {
             match state.insert_epoch_header(&header.unwrap(), VALIDATE_ALL_HEADERS) {
-                Ok(_) => info!("[{}/{}] Inserted epoch header: {}", epoch+1, current_epoch_number, epoch_block_number_hex),
+                Ok(_) => info!("[{}/{}] Inserted epoch header: {}", epoch, current_epoch_number, epoch_block_number_hex),
                 Err(e) => error!("Failed to insert epoch header {}: {}", epoch_block_number_hex, e)
             }
         } else {
