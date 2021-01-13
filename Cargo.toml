@@ -29,6 +29,7 @@ rand_core = "0.4"
 tokio = { version = "0.2", features = ["full"] }
 sled = "0.34.6"
 log = "0.4"
+clap = "2.33.3"
 
 [[example]]
 name = "lightest-sync"

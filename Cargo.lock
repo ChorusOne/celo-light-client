@@ -266,6 +266,7 @@ dependencies = [
  "algebra",
  "anomaly",
  "bls-crypto",
+ "clap",
  "env_logger 0.8.2",
  "hex 0.4.2",
  "hyper",
