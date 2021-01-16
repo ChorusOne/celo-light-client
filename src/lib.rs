@@ -14,7 +14,7 @@ extern crate serde_derive;
 extern crate serde_json;
 
 extern crate rlp;
-extern crate rug;
+extern crate num_bigint;
 extern crate sha3;
 extern crate secp256k1;
 extern crate bls_crypto;

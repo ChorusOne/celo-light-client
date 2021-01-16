@@ -4,7 +4,8 @@ use crate::types::istanbul::{IstanbulAggregatedSeal, IstanbulMsg};
 use crate::istanbul::min_quorum_size;
 use crate::state::Validator;
 use crate::errors::{Error, Kind};
-use rug::{Integer, integer::Order};
+use crate::serialization::rlp::big_int_to_rlp_compat_bytes;
+use num_bigint::BigInt as Integer;
 use bls_crypto::{
     PublicKey, Signature,
     hash_to_curve::try_and_increment::DIRECT_HASH_TO_G1,
@@ -17,7 +18,7 @@ pub fn verify_aggregated_seal(header_hash: Hash, validators: &[Validator], aggre
     // Find which public keys signed from the provided validator set
     let public_keys = validators.iter()
         .enumerate()
-        .filter(|(i, _)| aggregated_seal.bitmap.get_bit(*i as u32))
+        .filter(|(i, _)| aggregated_seal.bitmap.bit(*i as u64))
         .map(|(_, validator)| deserialize_pub_key(&validator.public_key))
         .collect::<Result<Vec<PublicKey>, Error>>()?;
 
@@ -35,7 +36,7 @@ pub fn verify_aggregated_seal(header_hash: Hash, validators: &[Validator], aggre
 }
 
 fn prepare_commited_seal(hash: Hash, round: &Integer) -> Vec<u8> {
-    let round_bytes = round.to_digits::<u8>(Order::Msf);
+    let round_bytes = big_int_to_rlp_compat_bytes(&round);
     let commit_bytes = [IstanbulMsg::Commit as u8];
 
     [&hash[..], &round_bytes[..], &commit_bytes[..]].concat()

@@ -126,12 +126,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
-name = "az"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9bcd47d94aa4eb8c076b50fc61a75020789394ffb9bd74a180b3379130f6569"
-
-[[package]]
 name = "backtrace"
 version = "0.3.55"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -272,10 +266,11 @@ dependencies = [
  "hyper",
  "log",
  "num",
+ "num-bigint 0.3.1 (git+https://github.com/janmarthedal/num-bigint.git)",
+ "num-traits",
  "rand 0.6.5",
  "rand_core 0.4.2",
  "rlp",
- "rug",
  "secp256k1",
  "serde",
  "serde_derive",
@@ -687,16 +682,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gmp-mpfr-sys"
-version = "1.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a57fdb339d49833021b1fded600ed240ae907e33909d5511a61dff884df7f16e"
-dependencies = [
- "libc",
- "winapi 0.3.9",
-]
-
-[[package]]
 name = "groth16"
 version = "0.1.1-alpha.0"
 source = "git+https://github.com/celo-org/zexe#02ee669fa43059b55918210e025183e572cc249d"
@@ -1042,7 +1027,7 @@ version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b7a8e9be5e039e2ff869df49155f1c06bd01ade2117ec783e56ab0932b67a8f"
 dependencies = [
- "num-bigint",
+ "num-bigint 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-complex",
  "num-integer",
  "num-iter",
@@ -1055,6 +1040,16 @@ name = "num-bigint"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e9a41747ae4633fce5adffb4d2e81ffc5e89593cb19917f8fb2cc5ff76507bf"
+dependencies = [
+ "autocfg 1.0.1",
+ "num-integer",
+ "num-traits",
+]
+
+[[package]]
+name = "num-bigint"
+version = "0.3.1"
+source = "git+https://github.com/janmarthedal/num-bigint.git#39b89cbb5ce520092de93536f57e2858da1943b6"
 dependencies = [
  "autocfg 1.0.1",
  "num-integer",
@@ -1098,7 +1093,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "12ac428b1cb17fce6f731001d307d351ec70a6d202fc2e60f7d4c5e42d8f4f07"
 dependencies = [
  "autocfg 1.0.1",
- "num-bigint",
+ "num-bigint 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-integer",
  "num-traits",
 ]
@@ -1553,18 +1548,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1190dcc8c3a512f1eef5d09bb8c84c7f39e1054e174d1795482e18f5272f2e73"
 dependencies = [
  "rustc-hex",
-]
-
-[[package]]
-name = "rug"
-version = "1.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e538d00da450a8e48aac7e6322e67b2dc86ec71a1feeac0e3954c4f07f01bc45"
-dependencies = [
- "az",
- "gmp-mpfr-sys",
- "libc",
- "serde",
 ]
 
 [[package]]

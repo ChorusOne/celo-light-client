@@ -1,10 +1,10 @@
 use crate::istanbul::istanbul_filtered_header;
 use crate::types::istanbul::ISTANBUL_EXTRA_VANITY_LENGTH;
 use crate::traits::{DefaultFrom, FromBytes};
-use crate::serialization::rlp::{rlp_list_field_from_bytes, rlp_to_big_int};
+use crate::serialization::rlp::{rlp_list_field_from_bytes, rlp_to_big_int, big_int_to_rlp_compat_bytes};
 use crate::slice_as_array_ref;
 use crate::errors::{Kind, Error};
-use rug::{integer::Order, Integer};
+use num_bigint::BigInt as Integer;
 use rlp::{DecoderError, Decodable, Rlp, Encodable, RlpStream};
 use sha3::{Digest, Keccak256};
 
@@ -129,7 +129,7 @@ impl Encodable for Header {
         s.append(&self.bloom.as_ref());
 
         // number
-        s.append(&self.number.to_digits(Order::Msf));
+        s.append(&big_int_to_rlp_compat_bytes(&self.number));
 
         // gas_used
         s.append(&self.gas_used);

@@ -2,9 +2,9 @@ use crate::types::header::Address;
 use crate::traits::{FromBytes, DefaultFrom};
 use crate::slice_as_array_ref;
 use crate::errors::{Kind, Error};
-use crate::serialization::rlp::{rlp_to_big_int, rlp_field_from_bytes};
+use crate::serialization::rlp::{rlp_to_big_int, big_int_to_rlp_compat_bytes, rlp_field_from_bytes};
 use rlp::{DecoderError, Decodable, Rlp, Encodable, RlpStream};
-use rug::{integer::Order, Integer};
+use num_bigint::BigInt as Integer;
 
 /// PUBLIC_KEY_LENGTH represents the number of bytes used to represent BLS public key
 pub const PUBLIC_KEY_LENGTH: usize = 96;
@@ -57,13 +57,13 @@ impl Encodable for IstanbulAggregatedSeal {
         s.begin_list(3);
 
         // bitmap
-        s.append(&self.bitmap.to_digits(Order::Msf));
+        s.append(&big_int_to_rlp_compat_bytes(&self.bitmap));
 
         // signature
         s.append(&self.signature);
 
         // round
-        s.append(&self.round.to_digits(Order::Msf));
+        s.append(&big_int_to_rlp_compat_bytes(&self.round));
     }
 }
 
@@ -139,7 +139,7 @@ impl Encodable for IstanbulExtra {
         }
 
         // removed_validators
-        s.append(&self.removed_validators.to_digits(Order::Msf));
+        s.append(&big_int_to_rlp_compat_bytes(&self.removed_validators));
 
         // seal
         s.append(&self.seal);
@@ -208,6 +208,7 @@ impl DefaultFrom for SerializedPublicKey {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use num_traits::Num;
 
     // tiny example to assert validity of basic data
     const ISTANBUL_EXTRA_TINY: &str = "f6ea9444add0ec310f115a0e603b2d7db9f067778eaf8a94294fc7e8f22b3bcdcf955dd7ff3ba2ed833f8212c00c80c3808080c3808080";

@@ -12,8 +12,7 @@ use celo::*;
 use relayer::*;
 
 use clap::{App, Arg};
-
-// TODO: https://github.com/rust-num/num-bigint/issues/172 (BIGINT bit)
+use num::cast::ToPrimitive;
 
 extern crate log;
 use log::{info, error};

@@ -6,7 +6,9 @@ use crate::traits::Storage;
 use crate::istanbul::{is_last_block_of_epoch, get_epoch_number};
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::collections::HashMap;
-use rug::Integer;
+use num_bigint::BigInt as Integer;
+use num::cast::ToPrimitive;
+use num_traits::Zero;
 
 const LAST_ENTRY_HASH_KEY: &str = "last_entry_hash";
 
@@ -99,17 +101,17 @@ impl<'a> State<'a> {
     }
 
     pub fn remove_validators(&mut self, removed_validators: &Integer) -> bool {
-        if removed_validators.significant_bits() == 0 {
+        if removed_validators.bits() == 0 {
             return true;
         }
 
-        if removed_validators.significant_bits() > self.entry.validators.len() as u32 {
+        if removed_validators.bits() > self.entry.validators.len() as u64 {
             return false;
         }
 
         let filtered_validators: Vec<Validator> = self.entry.validators.iter()
             .enumerate()
-            .filter(|(i, _)| removed_validators.get_bit(*i as u32) == false)
+            .filter(|(i, _)| removed_validators.bit(*i as u64) == false)
             .map(|(_, v)| v.to_owned())
             .collect();
 
@@ -158,7 +160,7 @@ impl<'a> State<'a> {
         let extra = IstanbulExtra::from_rlp(&header.extra)?;
 
         // genesis block is valid dead end
-        if verify && header.number != 0 {
+        if verify && !header.number.is_zero() {
             self.verify_header(&header)?
         }
 
@@ -462,7 +464,7 @@ mod tests {
         for v in val_names {
             for j in 0..old_validators.len() {
                 if &accounts.address(v.to_string()) == &old_validators.get(j).unwrap().address {
-                    bitmap.set_bit(j as u32, true);
+                    bitmap.set_bit(j as u64, true);
                 }
             }
         }

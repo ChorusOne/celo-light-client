@@ -62,7 +62,8 @@ pub(crate) mod hexnum {
 
 pub(crate) mod hexbigint {
     use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
-    use rug::Integer;
+    use num_bigint::BigInt as Integer;
+    use num::Num;
 
     /// Deserialize string into T
     pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<Integer, D::Error>
