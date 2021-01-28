@@ -1,5 +1,5 @@
 [package]
-name = "celo"
+name = "celo_light_client"
 version = "0.1.0"
 authors = ["Kaczanowski Mateusz <mateusz@chorus.one>"]
 edition = "2018"

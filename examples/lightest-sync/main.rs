@@ -7,8 +7,8 @@ extern crate serde_derive;
 #[macro_use]
 extern crate clap;
 
-extern crate celo;
-use celo::*;
+extern crate celo_light_client;
+use celo_light_client::*;
 use relayer::*;
 
 use clap::{App, Arg};

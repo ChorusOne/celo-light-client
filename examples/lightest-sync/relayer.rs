@@ -1,4 +1,4 @@
-use celo::Header;
+use celo_light_client::Header;
 
 use hyper::client::{Client, HttpConnector};
 use hyper::http::Request;

@@ -1,9 +1,7 @@
 extern crate sled;
 
 use sled::Db;
-use celo::Error;
-use celo::Kind;
-use celo::Storage;
+use celo_light_client::{Error, Kind, Storage};
 
 pub struct ExampleStorage {
     db: Db,
