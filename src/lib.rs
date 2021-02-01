@@ -23,11 +23,17 @@ extern crate anomaly;
 extern crate thiserror;
 
 pub use types::{
-    header::*,
-    istanbul::*
+    header::Header,
+    istanbul::IstanbulExtra,
 };
-pub use state::*;
-pub use istanbul::*;
-pub use bls::*;
-pub use traits::*;
-pub use errors::*;
+pub use istanbul::{
+    epoch_block_num_iter,
+    get_epoch_number,
+};
+pub use state::State;
+pub use errors::{Error, Kind};
+pub use traits::{
+    Storage,
+    FromBytes,
+    DefaultFrom
+};

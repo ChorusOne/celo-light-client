@@ -74,8 +74,8 @@ async fn main(){
 
     // setup state container
     info!("Setting up storage");
-    let mut storage = storage::ExampleStorage::new(db_path);
-    let mut state = State::new(epoch_size, &mut storage);
+    let storage = storage::ExampleStorage::new(db_path);
+    let mut state = State::new(epoch_size, Box::new(storage));
 
     info!("Restoring previous state from DB (if applicable)");
     let first_epoch: u64 = state.restore().unwrap_or_default();

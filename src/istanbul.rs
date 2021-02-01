@@ -7,7 +7,8 @@ use crate::errors::Error;
 // There is a special case if the number == 0. It is basically the last block of the 0th epoch,
 // and should have a value of epoch_size
 pub fn get_number_within_epoch(number: u64, epoch_size: u64) -> u64 {
-    if number % epoch_size == 0 {
+    let number = number % epoch_size;
+    if number == 0 {
         epoch_size
     } else {
         number

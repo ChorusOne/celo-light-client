@@ -43,15 +43,9 @@ fn prepare_commited_seal(hash: Hash, round: &Integer) -> Vec<u8> {
 }
 
 fn deserialize_signature(signature: &[u8]) -> Result<Signature, Error> {
-    match Signature::deserialize(signature) {
-        Ok(sig) => Ok(sig),
-        Err(_) => Err(Kind::BlsInvalidSignature.into()),
-    }
+    Signature::deserialize(signature).map_err(|e| Kind::BlsInvalidSignature.context(e).into())
 }
 
 fn deserialize_pub_key(key: &[u8]) -> Result<PublicKey, Error> {
-    match PublicKey::deserialize(key) {
-        Ok(pub_key) => Ok(pub_key),
-        Err(_) => Err(Kind::BlsInvalidPublicKey.into()),
-    }
+    PublicKey::deserialize(key).map_err(|e| Kind::BlsInvalidPublicKey.context(e).into())
 }

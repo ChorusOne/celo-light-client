@@ -19,6 +19,7 @@ pub const ISTANBUL_EXTRA_VANITY_LENGTH: usize = 32;
 /// IstanbulExtraVanity is a portion of extra-data bytes reserved for validator vanity
 pub type IstanbulExtraVanity = [u8; ISTANBUL_EXTRA_VANITY_LENGTH];
 
+#[allow(dead_code)]
 pub enum IstanbulMsg {
     PrePrepare,
     Prepare,

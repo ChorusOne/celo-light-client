@@ -24,7 +24,7 @@ pub struct Validator{
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct StateEntry {
+struct StateEntry {
     pub validators: Vec<Validator>, // set of authorized validators at this moment
     pub epoch: u64, // the number of blocks for each epoch
     pub number: u64, // block number where the snapshot was created
@@ -56,13 +56,13 @@ impl StateEntry {
     }
 }
 
-pub struct State<'a> {
-    storage: &'a mut dyn Storage,
+pub struct State {
+    storage: Box<dyn Storage>,
     entry: StateEntry,
 }
 
-impl<'a> State<'a> {
-    pub fn new(epoch: u64, storage: &'a mut dyn Storage) -> Self {
+impl State {
+    pub fn new(epoch: u64, storage: Box<dyn Storage>) -> Self {
         let mut entry = StateEntry::new();
         entry.epoch = epoch;
         
@@ -282,8 +282,8 @@ mod tests {
 
     #[test]
     fn test_add_remove() {
-        let mut storage = MockStorage{};
-        let mut state = State::new(123, &mut storage);
+        let storage = Box::new(MockStorage{});
+        let mut state = State::new(123, storage);
         let mut result = state.add_validators(vec![
             Validator{
                 address: bytes_to_address(&vec![0x3 as u8]),
@@ -397,9 +397,9 @@ mod tests {
         ];
 
         for test in tests {
-            let mut storage = MockStorage{};
+            let storage = Box::new(MockStorage{});
             let mut accounts = AccountPool::new();
-            let mut state = State::new(123, &mut storage);
+            let mut state = State::new(123, storage);
 
             let validators = convert_val_names_to_validators(&mut accounts, test.validators);
             state.add_validators(validators.clone());
