@@ -27,8 +27,8 @@ pub use types::{
     istanbul::IstanbulExtra,
 };
 pub use istanbul::{
-    epoch_block_num_iter,
     get_epoch_number,
+    get_epoch_last_block_number,
 };
 pub use state::State;
 pub use errors::{Error, Kind};

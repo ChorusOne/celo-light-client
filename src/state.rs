@@ -121,6 +121,7 @@ impl State {
     }
 
     pub fn verify_header(&self, header: &Header) -> Result<(), Error> {
+        let header_hash = header.hash()?;
         let extra = IstanbulExtra::from_rlp(&header.extra)?;
 
         let curr_time = match SystemTime::now().duration_since(UNIX_EPOCH) {
@@ -134,7 +135,7 @@ impl State {
 	}
 
         verify_aggregated_seal(
-            header.hash()?,
+            header_hash,
             &self.entry.validators,
             extra.aggregated_seal
         )
@@ -157,6 +158,7 @@ impl State {
     }
 
     fn store_epoch_header(&mut self, header: &Header, verify: bool) -> Result<(), Error>{
+        let header_hash = header.hash()?;
         let extra = IstanbulExtra::from_rlp(&header.extra)?;
 
         // genesis block is valid dead end
@@ -192,7 +194,7 @@ impl State {
             validators: self.entry.validators.clone(),
             epoch: self.entry.epoch,
             number: self.entry.number + self.entry.epoch,
-            hash: header.hash()?
+            hash: header_hash
         };
 
         let json_string = entry.to_json()?;
