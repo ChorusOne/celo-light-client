@@ -2,7 +2,7 @@
 Implementation of celo light client in rust compilable to wasm. It is written to be integrated with CosmWasm readily, and is optimized to run in a constrained environment of a smart contract.
 
 ## How to?
-In order to run the light client example you need to spawn [celo-blockchain](https://github.com/celo-org/celo-blockchain) node.
+NOTE: In order to run the light client example you need to spawn [celo-blockchain](https://github.com/celo-org/celo-blockchain) node.
 
 ### Quick setup (via `docker-compose`)
 ```
