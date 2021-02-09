@@ -16,7 +16,7 @@ $ git clone https://github.com/celo-org/celo-blockchain.git && cd celo-blockchai
 $ go run build/ci.go install ./cmd/geth && ./build/bin/geth  --maxpeers 50 --light.maxpeers 20 --syncmode lightest --rpc  --ws --wsport 3334 --wsapi eth,net,web3 console
 
 # second terminal window
-$ git clone https://github.com/ChorusOne/celo-light-client-lib.git && cd celo-light-client-lib
+$ git clone https://github.com/ChorusOne/celo-light-client.git && cd celo-light-client
 
 $ RUST_LOG=info cargo run --example lightest-sync -- --fast
 $ cargo test -- --nocapture
