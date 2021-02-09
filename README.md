@@ -1,6 +1,7 @@
 [![Build Status][travis-badge]][travis]
 
 [travis-badge]: https://travis-ci.org/ChorusOne/celo-light-client.svg?branch=master
+[travis]: https://travis-ci.org/ChorusOne/celo-light-client/
 
 # Celo Light Client
 Implementation of celo light client in rust compilable to wasm. It is written to be integrated with CosmWasm readily, and is optimized to run in a constrained environment of a smart contract.
