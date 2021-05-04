@@ -11,6 +11,7 @@ The codebase is split into two parts:
 * `contract` - an (optional) [IBC](https://docs.cosmos.network/master/ibc/overview.html) compatible light client contract, intended to be run on Cosmos Blockchain as WASM binary
 
 **ultralight-sync explained**
+
 In the nutshell, the validator set for the current epoch is computed by downloading the last header of each previous epoch and applying the validator set diff. The latest block header is then verified by checking that at least two-thirds of the validator set for the current epoch signed the block header.
 Ultralight mode download approximately 30,000 times fewer headers than light nodes in order to sync the latest block (assuming 3-second block periods and 1-day epochs).
 
