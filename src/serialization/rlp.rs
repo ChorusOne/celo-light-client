@@ -1,30 +1,35 @@
 use crate::traits::FromBytes;
-use rlp::{DecoderError, Rlp};
 use num_bigint::{BigInt as Integer, Sign};
 use num_traits::Zero;
+use rlp::{DecoderError, Rlp};
 
-pub fn rlp_list_field_from_bytes<T>(rlp: &Rlp, index: usize) -> Result<T, DecoderError> where T: FromBytes + Clone {
-    rlp.at(index)?.decoder().decode_value(|data| {
-        match T::from_bytes(data) {
+pub fn rlp_list_field_from_bytes<T>(rlp: &Rlp, index: usize) -> Result<T, DecoderError>
+where
+    T: FromBytes + Clone,
+{
+    rlp.at(index)?
+        .decoder()
+        .decode_value(|data| match T::from_bytes(data) {
             Ok(field) => Ok(field.to_owned()),
             Err(_) => Err(DecoderError::Custom("invalid length data")),
-        }
-    })
+        })
 }
 
-pub fn rlp_field_from_bytes<T>(rlp: &Rlp) -> Result<T, DecoderError> where T: FromBytes + Clone {
-    rlp.decoder().decode_value(|data| {
-        match T::from_bytes(data) {
+pub fn rlp_field_from_bytes<T>(rlp: &Rlp) -> Result<T, DecoderError>
+where
+    T: FromBytes + Clone,
+{
+    rlp.decoder()
+        .decode_value(|data| match T::from_bytes(data) {
             Ok(field) => Ok(field.to_owned()),
             Err(_) => Err(DecoderError::Custom("invalid length data")),
-        }
-    })
+        })
 }
 
 pub fn rlp_to_big_int(rlp: &Rlp, index: usize) -> Result<Integer, DecoderError> {
-    rlp.at(index)?.decoder().decode_value(
-        |bytes| Ok(Integer::from_bytes_be(Sign::Plus, bytes))
-    )
+    rlp.at(index)?
+        .decoder()
+        .decode_value(|bytes| Ok(Integer::from_bytes_be(Sign::Plus, bytes)))
 }
 
 pub fn big_int_to_rlp_compat_bytes(val: &Integer) -> Vec<u8> {
@@ -59,7 +64,9 @@ mod tests {
         );
 
         assert_eq!(
-            big_int_to_rlp_compat_bytes(&Integer::from_str_radix("17050895330821537656", 10).unwrap()),
+            big_int_to_rlp_compat_bytes(
+                &Integer::from_str_radix("17050895330821537656", 10).unwrap()
+            ),
             expected_bytes,
         );
     }
