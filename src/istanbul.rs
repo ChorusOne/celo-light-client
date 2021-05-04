@@ -1,7 +1,7 @@
-use crate::types::header::Header;
-use crate::types::istanbul::{IstanbulExtra, IstanbulExtraVanity,  IstanbulAggregatedSeal};
-use crate::traits::FromBytes;
 use crate::errors::Error;
+use crate::traits::FromBytes;
+use crate::types::header::Header;
+use crate::types::istanbul::{IstanbulAggregatedSeal, IstanbulExtra, IstanbulExtraVanity};
 
 // Retrieves the block number within an epoch. The return value will be 1-based.
 // There is a special case if the number == 0. It is basically the last block of the 0th epoch,
@@ -28,7 +28,7 @@ pub fn get_epoch_number(number: u64, epoch_size: u64) -> u64 {
 pub fn get_epoch_first_block_number(epoch_number: u64, epoch_size: u64) -> Option<u64> {
     if epoch_number == 0 {
         // no first block for epoch 0
-        return None
+        return None;
     }
 
     Some(((epoch_number - 1) * epoch_size) + 1)
@@ -36,7 +36,7 @@ pub fn get_epoch_first_block_number(epoch_number: u64, epoch_size: u64) -> Optio
 
 pub fn get_epoch_last_block_number(epoch_number: u64, epoch_size: u64) -> u64 {
     if epoch_number == 0 {
-        return 0
+        return 0;
     }
 
     // Epoch 0 is just the genesis bock, so epoch 1 starts at block 1 and ends at block epochSize
@@ -64,7 +64,9 @@ pub fn is_last_block_of_epoch(number: u64, epoch_size: u64) -> bool {
 }
 
 pub fn min_quorum_size(total_validators: usize) -> usize {
-    return ((2.0*(total_validators as f64) / 3.0) as f64).ceil() as usize
+    // non-float equivalent of:
+    //  ((2.0*(total_validators as f64) / 3.0) as f64).ceil() as usize
+    ((2 * total_validators) - 1 + 3) / 3
 }
 
 #[cfg(test)]
@@ -81,7 +83,9 @@ mod tests {
             (5, 4),
             (6, 4),
             (7, 5),
-        ].iter() {
+        ]
+        .iter()
+        {
             assert_eq!(
                 min_quorum_size(*validator_set_size),
                 *expected_min_quorum_size
@@ -92,17 +96,27 @@ mod tests {
     #[test]
     fn validates_epoch_math() {
         assert_eq!(
-            vec![get_epoch_number(0, 3), get_epoch_number(3, 3), get_epoch_number(4, 3)],
+            vec![
+                get_epoch_number(0, 3),
+                get_epoch_number(3, 3),
+                get_epoch_number(4, 3)
+            ],
             vec![0, 1, 2]
         );
 
         assert_eq!(
-            vec![get_epoch_first_block_number(0, 3), get_epoch_first_block_number(9, 3)],
+            vec![
+                get_epoch_first_block_number(0, 3),
+                get_epoch_first_block_number(9, 3)
+            ],
             vec![None, Some(25)]
         );
 
         assert_eq!(
-            vec![get_epoch_last_block_number(0, 3), get_epoch_last_block_number(9, 3)],
+            vec![
+                get_epoch_last_block_number(0, 3),
+                get_epoch_last_block_number(9, 3)
+            ],
             vec![0, 27]
         );
     }

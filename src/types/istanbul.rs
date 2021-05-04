@@ -1,10 +1,12 @@
-use crate::types::header::Address;
-use crate::traits::{FromBytes, DefaultFrom};
+use crate::errors::{Error, Kind};
+use crate::serialization::rlp::{
+    big_int_to_rlp_compat_bytes, rlp_field_from_bytes, rlp_to_big_int,
+};
 use crate::slice_as_array_ref;
-use crate::errors::{Kind, Error};
-use crate::serialization::rlp::{rlp_to_big_int, big_int_to_rlp_compat_bytes, rlp_field_from_bytes};
-use rlp::{DecoderError, Decodable, Rlp, Encodable, RlpStream};
+use crate::traits::{DefaultFrom, FromBytes};
+use crate::types::header::Address;
 use num_bigint::BigInt as Integer;
+use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 
 /// PUBLIC_KEY_LENGTH represents the number of bytes used to represent BLS public key
 pub const PUBLIC_KEY_LENGTH: usize = 96;
@@ -24,9 +26,10 @@ pub enum IstanbulMsg {
     PrePrepare,
     Prepare,
     Commit,
-    RoundChange
+    RoundChange,
 }
 
+/// IstanbulAggregatedSeal contains the aggregated BLS signature created via IBFT consensus
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct IstanbulAggregatedSeal {
@@ -70,51 +73,51 @@ impl Encodable for IstanbulAggregatedSeal {
 
 impl Decodable for IstanbulAggregatedSeal {
     fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
-        Ok(IstanbulAggregatedSeal{
+        Ok(IstanbulAggregatedSeal {
             bitmap: rlp_to_big_int(rlp, 0)?,
             signature: rlp.val_at(1)?,
-            round: rlp_to_big_int(rlp, 2)?
+            round: rlp_to_big_int(rlp, 2)?,
         })
     }
 }
 
+/// IstanbulExtra represents IBFT consensus state data
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct IstanbulExtra {
-    /// AddedValidators are the validators that have been added in the block
+    /// The validators that have been added in the block
     #[serde(with = "crate::serialization::bytes::hexvec")]
     pub added_validators: Vec<Address>,
 
-    /// AddedValidatorsPublicKeys are the BLS public keys for the validators added in the block
+    /// The BLS public keys for the validators added in the block
     #[serde(with = "crate::serialization::bytes::hexvec")]
     pub added_validators_public_keys: Vec<SerializedPublicKey>,
-    
-    /// RemovedValidators is a bitmap having an active bit for each removed validator in the block
+
+    /// Bitmap having an active bit for each removed validator in the block
     #[serde(with = "crate::serialization::bytes::hexbigint")]
     pub removed_validators: Integer,
 
-    /// Seal is an ECDSA signature by the proposer
+    /// ECDSA signature by the proposer
     #[serde(with = "crate::serialization::bytes::hexstring")]
     pub seal: Vec<u8>,
 
-    /// AggregatedSeal contains the aggregated BLS signature created via IBFT consensus.
+    /// Contains the aggregated BLS signature created via IBFT consensus
     pub aggregated_seal: IstanbulAggregatedSeal,
 
-    /// ParentAggregatedSeal contains and aggregated BLS signature for the previous block.
-    pub parent_aggregated_seal: IstanbulAggregatedSeal
-
+    /// Contains and aggregated BLS signature for the previous block
+    pub parent_aggregated_seal: IstanbulAggregatedSeal,
 }
 
 impl IstanbulExtra {
-    pub fn from_rlp(bytes: &[u8]) -> Result<Self, Error>{
+    pub fn from_rlp(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() < ISTANBUL_EXTRA_VANITY_LENGTH {
-            return Err(Kind::RlpDecodeError.context(DecoderError::Custom("invalid istanbul header extra-data")).into());
+            return Err(Kind::RlpDecodeError
+                .context(DecoderError::Custom("invalid istanbul header extra-data"))
+                .into());
         }
 
-        match rlp::decode(&bytes[ISTANBUL_EXTRA_VANITY_LENGTH..]) {
-            Ok(extra) => Ok(extra),
-            Err(err) => Err(Kind::RlpDecodeError.context(err).into()),
-        }
+        rlp::decode(&bytes[ISTANBUL_EXTRA_VANITY_LENGTH..])
+            .map_err(|e| Kind::RlpDecodeError.context(e).into())
     }
 
     pub fn to_rlp(&self, vanity: &IstanbulExtraVanity) -> Vec<u8> {
@@ -154,32 +157,28 @@ impl Encodable for IstanbulExtra {
 }
 
 impl Decodable for IstanbulExtra {
-        fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
-            let added_validators: Result<Vec<Address>, DecoderError> = rlp
-                .at(0)?
-                .iter()
-                .map(|r| {
-                    rlp_field_from_bytes(&r)
-                })
-                .collect();
+    fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
+        let added_validators: Result<Vec<Address>, DecoderError> = rlp
+            .at(0)?
+            .iter()
+            .map(|r| rlp_field_from_bytes(&r))
+            .collect();
 
-            let added_validators_public_keys: Result<Vec<SerializedPublicKey>, DecoderError> = rlp
-                .at(1)?
-                .iter()
-                .map(|r| {
-                    rlp_field_from_bytes(&r)
-                })
-                .collect();
+        let added_validators_public_keys: Result<Vec<SerializedPublicKey>, DecoderError> = rlp
+            .at(1)?
+            .iter()
+            .map(|r| rlp_field_from_bytes(&r))
+            .collect();
 
-            Ok(IstanbulExtra{
-                added_validators: added_validators?,
-                added_validators_public_keys: added_validators_public_keys?,
-                removed_validators: rlp_to_big_int(rlp, 2)?,
-                seal: rlp.val_at(3)?,
-                aggregated_seal: rlp.val_at(4)?,
-                parent_aggregated_seal: rlp.val_at(5)?,
-            })
-        }
+        Ok(IstanbulExtra {
+            added_validators: added_validators?,
+            added_validators_public_keys: added_validators_public_keys?,
+            removed_validators: rlp_to_big_int(rlp, 2)?,
+            seal: rlp.val_at(3)?,
+            aggregated_seal: rlp.val_at(4)?,
+            parent_aggregated_seal: rlp.val_at(5)?,
+        })
+    }
 }
 
 impl FromBytes for IstanbulExtraVanity {
@@ -193,10 +192,7 @@ impl FromBytes for IstanbulExtraVanity {
 
 impl FromBytes for SerializedPublicKey {
     fn from_bytes(data: &[u8]) -> Result<&SerializedPublicKey, Error> {
-        slice_as_array_ref!(
-            &data[..PUBLIC_KEY_LENGTH],
-            PUBLIC_KEY_LENGTH
-        )
+        slice_as_array_ref!(&data[..PUBLIC_KEY_LENGTH], PUBLIC_KEY_LENGTH)
     }
 }
 
@@ -318,7 +314,10 @@ mod tests {
         for (bytes, expected_ist) in vec![
             prepend_vanity(ISTANBUL_EXTRA_TINY),
             hex::decode(&ISTANBUL_EXTRA_DUMPED).unwrap(),
-        ].iter().zip(expected) {
+        ]
+        .iter()
+        .zip(expected)
+        {
             let parsed = IstanbulExtra::from_rlp(&bytes).unwrap();
 
             assert_eq!(parsed, expected_ist);
@@ -327,8 +326,8 @@ mod tests {
 
     #[test]
     fn rejects_insufficient_vanity() {
-        let bytes = vec![0; ISTANBUL_EXTRA_VANITY_LENGTH-1];
-        
+        let bytes = vec![0; ISTANBUL_EXTRA_VANITY_LENGTH - 1];
+
         assert!(IstanbulExtra::from_rlp(&bytes).is_err());
     }
 
@@ -337,7 +336,9 @@ mod tests {
         for bytes in vec![
             prepend_vanity(ISTANBUL_EXTRA_TINY),
             hex::decode(&ISTANBUL_EXTRA_DUMPED).unwrap(),
-        ].iter() {
+        ]
+        .iter()
+        {
             let parsed = IstanbulExtra::from_rlp(&bytes).unwrap();
             let json_string = serde_json::to_string(&parsed).unwrap();
             let deserialized_from_json: IstanbulExtra = serde_json::from_str(&json_string).unwrap();
@@ -354,16 +355,23 @@ mod tests {
     }
 
     fn to_serialized_pub_key_vec(keys: Vec<&str>) -> Vec<SerializedPublicKey> {
-        keys.iter().map(|key| {
-            SerializedPublicKey::from_bytes(hex::decode(key).unwrap().as_slice()).unwrap().to_owned()
-        })
-        .collect()
+        keys.iter()
+            .map(|key| {
+                SerializedPublicKey::from_bytes(hex::decode(key).unwrap().as_slice())
+                    .unwrap()
+                    .to_owned()
+            })
+            .collect()
     }
 
     fn to_address_vec(addresses: Vec<&str>) -> Vec<Address> {
-        addresses.iter().map(|address| {
-            Address::from_bytes(hex::decode(address).unwrap().as_slice()).unwrap().to_owned()
-        })
-        .collect()
+        addresses
+            .iter()
+            .map(|address| {
+                Address::from_bytes(hex::decode(address).unwrap().as_slice())
+                    .unwrap()
+                    .to_owned()
+            })
+            .collect()
     }
 }

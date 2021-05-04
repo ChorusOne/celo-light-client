@@ -4,37 +4,36 @@
 [travis]: https://travis-ci.org/ChorusOne/celo-light-client/
 
 # Celo Light Client
-Implementation of celo light client in rust compilable to wasm. It is written to be integrated with CosmWasm readily, and is optimized to run in a constrained environment of a smart contract.
+The library provides a [lightest-sync](https://docs.celo.org/celo-codebase/protocol/consensus/ultralight-sync) mode, that enables a quick, secure, and cheap way to synchronize IBFT consensus state with a Celo Blockchain node.
 
-## How to?
-NOTE: In order to run the light client example you need to spawn [celo-blockchain](https://github.com/celo-org/celo-blockchain) node.
+The codebase is split into two parts:
+* `library` - a subset of Celo Blockchain building blocks, such as data structures (ie. Header, IBFT) or functionalities (ie. serialization, consensus state management)
+* `contract` - an (optional) [IBC](https://docs.cosmos.network/master/ibc/overview.html) compatible light client contract, intended to be run on Cosmos Blockchain as WASM binary
 
-### Quick setup (via `docker-compose`)
+**ultralight-sync explained**
+In the nutshell, the validator set for the current epoch is computed by downloading the last header of each previous epoch and applying the validator set diff. The latest block header is then verified by checking that at least two-thirds of the validator set for the current epoch signed the block header.
+Ultralight mode download approximately 30,000 times fewer headers than light nodes in order to sync the latest block (assuming 3-second block periods and 1-day epochs).
+
+### Example
+An example program that utilizes `lightest-sync` library is placed in the `examples/lightest-sync`. It uses [celo-blockchain node](https://github.com/celo-org/celo-blockchain) to fetch epoch headers, built up the validator set, and verify the latest available header.
+
+You may spawn up example program via:
 ```
-$ make example
-```
-
-### Manual setup
-```
-# first terminal window
-$ git clone https://github.com/celo-org/celo-blockchain.git && cd celo-blockchain
-$ go run build/ci.go install ./cmd/geth && ./build/bin/geth  --maxpeers 50 --light.maxpeers 20 --syncmode lightest --rpc  --ws --wsport 3334 --wsapi eth,net,web3 console
-
-# second terminal window
-$ git clone https://github.com/ChorusOne/celo-light-client.git && cd celo-light-client
-
-$ RUST_LOG=info cargo run --example lightest-sync -- --fast
-$ cargo test -- --nocapture
+$ docker-compose up --abort-on-container-exit
 ```
 
-### Compiling to wasm
+### Light Client
+The CosmWasm contract is gated by `wasm-contract` feature:
 ```
 $ rustup target add wasm32-unknown-unknown
-$ make wasm
+$ cargo build --release --features wasm-contract --target wasm32-unknown-unknown
+```
+
+To compile optimized binary run:
+```
+$ make wasm-optimized
 $ stat target/wasm32-unknown-unknown/release/celo.wasm
 ```
 
-## How does it work?
-This library reflects the [lightest-sync](https://docs.celo.org/celo-codebase/protocol/consensus/ultralight-sync) mode, where the validator set for the current epoch is computed by downloading the last header of each previous epoch and applying the validator set diff. The latest block header is then verified by checking that at least two-thirds of the validator set for the current epoch signed the block header.
-
-The validator set is being stored in the local KV-store so that after a restart, only new epoch blocks are processed.
+### Demo
+[![asciicast](https://asciinema.org/a/411776.svg)](https://asciinema.org/a/411776)

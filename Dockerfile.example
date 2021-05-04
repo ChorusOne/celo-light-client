@@ -12,4 +12,4 @@ RUN cargo build --example lightest-sync --release
 RUN cp target/release/examples/lightest-sync /usr/local/bin/lightest-sync
 RUN chmod +x /usr/local/bin/lightest-sync
 
-CMD ["lightest-sync", "--fast"]
+CMD ["RUST_LOG=info", "lightest-sync", "--fast"]
