@@ -33,12 +33,12 @@ byteorder = {version = "1.4.3", optional = true }
 
 # why fork? - ics23 proofs structs are not json serializable by default.
 # The forked library adds serde json serialization.
-ics23 = { git = "https://github.com/mkaczanowski/ics23", optional = true }
+ics23 = { git = "https://github.com/ChorusOne/ics23", branch = "json_serialization", optional = true }
 
 # why fork? - ibc-rs depends on the tonic library that doesn't compile to WASM.
 # The library itself is only used to generate prost client/server definitions,
 # so the forked repo simply disabled that feature
-ibc = { git = "https://github.com/mkaczanowski/ibc-rs", branch = "no_tonic", default-features = true , optional = true }
+ibc = { git = "https://github.com/ChorusOne/ibc-rs", branch = "no_tonic", default-features = true , optional = true }
 
 [lib]
 crate-type = ["cdylib", "rlib"]
