@@ -36,6 +36,7 @@ pub use types::{
 };
 pub use istanbul::{
     get_epoch_number,
+    get_epoch_first_block_number,
     get_epoch_last_block_number,
 };
 pub use state::State;

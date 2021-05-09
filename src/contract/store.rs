@@ -3,8 +3,6 @@ use crate::contract::types::ibc::Height;
 use cosmwasm_std::{StdResult, Storage};
 use cosmwasm_storage::{singleton, singleton_read};
 
-pub const KEY_STATE_CLIENT: &[u8] = b"client_state";
-
 // processed_time_key returns the key under which the processed time will be stored in the client store
 pub fn processed_time_key(height: Height) -> Vec<u8> {
     // consensusStates/ path is defined in ICS 24
