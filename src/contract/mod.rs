@@ -130,12 +130,6 @@ pub(crate) fn handle(
             consensus_state_2,
         ),
 
-        HandleMsg::CheckProposedHeaderAndUpdateState {
-            header,
-            consensus_state,
-            me,
-        } => check_proposed_header(deps, env, me, consensus_state, header),
-
         HandleMsg::VerifyUpgradeAndUpdateState {
             me,
             new_client_state,
@@ -479,45 +473,6 @@ fn check_header_and_update_state(
         ],
         data: Some(response_data),
     })
-}
-
-fn check_proposed_header(
-    deps: DepsMut,
-    env: Env,
-    me: ClientState,
-    consensus_state: ConsensusState,
-    header: WasmHeader,
-) -> Result<HandleResponse, StdError> {
-    let current_timestamp: u64 = env.block.time;
-    let mut new_client_state = me.clone();
-    let light_client_state: LightClientState = from_base64_rlp(&me.data, "msg.light_client_state")?;
-
-    if me.frozen {
-        if !light_client_state.allow_update_after_misbehavior {
-            return Err(StdError::generic_err(
-                "Client is not allowed to be unfrozen",
-            ));
-        }
-
-        new_client_state.frozen = false;
-        new_client_state.frozen_height = None;
-
-        // No softer validation for expired clients
-        return check_header_and_update_state(deps, env, new_client_state, consensus_state, header);
-    } else if light_client_state.allow_update_after_expiry
-        && is_expired(
-            current_timestamp,
-            consensus_state.timestamp,
-            &light_client_state,
-        )
-    {
-        // If client is expired, lets perform full validation
-        return check_header_and_update_state(deps, env, new_client_state, consensus_state, header);
-    }
-
-    Err(StdError::generic_err(
-        "client cannot be updated with the proposal",
-    ))
 }
 
 pub fn verify_upgrade_and_update_state(

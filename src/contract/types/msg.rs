@@ -18,11 +18,6 @@ pub enum HandleMsg {
         consensus_state: ConsensusState,
         me: ClientState,
     },
-    CheckProposedHeaderAndUpdateState {
-        header: WasmHeader,
-        consensus_state: ConsensusState,
-        me: ClientState,
-    },
     VerifyUpgradeAndUpdateState {
         me: ClientState,
         new_client_state: ClientState,
