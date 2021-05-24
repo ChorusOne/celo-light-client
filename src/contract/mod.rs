@@ -6,7 +6,10 @@ use prost::Message;
 
 use crate::contract::{
     serialization::{from_base64, from_base64_json_slice, from_base64_rlp},
-    store::{get_consensus_state, get_processed_time, set_consensus_state, set_processed_time, SUBJECT_PREFIX, SUBSTITUTE_PREFIX, EMPTY_PREFIX},
+    store::{
+        get_consensus_state, get_processed_height, get_processed_time, get_self_height,
+        set_consensus_meta, set_consensus_state, EMPTY_PREFIX, SUBJECT_PREFIX, SUBSTITUTE_PREFIX,
+    },
     types::ibc::{
         apply_prefix, verify_membership, Channel, ChannelId, ClientId, ClientUpgradePath,
         ConnectionEnd, ConnectionId, Height, MerklePath, MerklePrefix, MerkleProof, MerkleRoot,
@@ -28,7 +31,7 @@ use crate::contract::{
     },
     util::{to_generic_err, u64_to_big_endian, wrap_response},
 };
-use crate::{state::State, traits::ToRlp, traits::FromRlp, types::header::Header};
+use crate::{state::State, traits::FromRlp, traits::ToRlp, types::header::Header};
 
 use cosmwasm_std::{attr, to_vec, Binary};
 use cosmwasm_std::{Deps, DepsMut, Env, MessageInfo};
@@ -239,8 +242,8 @@ pub(crate) fn handle(
             proof,
             port_id,
             channel_id,
-            current_timestamp,
-            delay_period,
+            delay_time_period,
+            delay_block_period,
             sequence,
             commitment_bytes,
             consensus_state,
@@ -253,8 +256,8 @@ pub(crate) fn handle(
             proof,
             port_id,
             channel_id,
-            current_timestamp,
-            delay_period,
+            delay_time_period,
+            delay_block_period,
             sequence,
             commitment_bytes,
             consensus_state,
@@ -267,8 +270,8 @@ pub(crate) fn handle(
             proof,
             port_id,
             channel_id,
-            current_timestamp,
-            delay_period,
+            delay_time_period,
+            delay_block_period,
             sequence,
             acknowledgement,
             consensus_state,
@@ -281,8 +284,8 @@ pub(crate) fn handle(
             proof,
             port_id,
             channel_id,
-            current_timestamp,
-            delay_period,
+            delay_time_period,
+            delay_block_period,
             sequence,
             acknowledgement,
             consensus_state,
@@ -295,8 +298,8 @@ pub(crate) fn handle(
             proof,
             port_id,
             channel_id,
-            current_timestamp,
-            delay_period,
+            delay_time_period,
+            delay_block_period,
             sequence,
             consensus_state,
         } => verify_packet_receipt_absence(
@@ -308,8 +311,8 @@ pub(crate) fn handle(
             proof,
             port_id,
             channel_id,
-            current_timestamp,
-            delay_period,
+            delay_time_period,
+            delay_block_period,
             sequence,
             consensus_state,
         ),
@@ -321,8 +324,8 @@ pub(crate) fn handle(
             proof,
             port_id,
             channel_id,
-            current_timestamp,
-            delay_period,
+            delay_time_period,
+            delay_block_period,
             next_sequence_recv,
             consensus_state,
         } => verify_next_sequence_recv(
@@ -334,8 +337,8 @@ pub(crate) fn handle(
             proof,
             port_id,
             channel_id,
-            current_timestamp,
-            delay_period,
+            delay_time_period,
+            delay_block_period,
             next_sequence_recv,
             consensus_state,
         ),
@@ -394,8 +397,8 @@ fn init_contract(
         _ => {}
     }
 
-    // set processed time with initial consensus state height equal to initial client state's latest height
-    set_processed_time(deps.storage, EMPTY_PREFIX, &me.latest_height.unwrap(), &env.block.time)?;
+    // Set metadata for initial consensus state
+    set_consensus_meta(&env, deps.storage, EMPTY_PREFIX, &me.latest_height.unwrap())?;
 
     // Update the state
     let response_data = Binary(to_vec(&InitializeStateResult {
@@ -456,8 +459,8 @@ fn check_header_and_update_state(
         r#type: consensus_state.r#type,
     };
 
-    // set block height as processed time
-    set_processed_time(deps.storage, EMPTY_PREFIX, &wasm_header.height, &current_timestamp)?;
+    // set metadata for this consensus state
+    set_consensus_meta(&env, deps.storage, EMPTY_PREFIX, &wasm_header.height)?;
 
     let response_data = Binary(to_vec(&CheckHeaderAndUpdateStateResult {
         new_client_state,
@@ -476,7 +479,7 @@ fn check_header_and_update_state(
 }
 
 pub fn verify_upgrade_and_update_state(
-    _deps: DepsMut,
+    deps: DepsMut,
     env: Env,
     me: ClientState,
     new_client_state: ClientState,
@@ -555,6 +558,14 @@ pub fn verify_upgrade_and_update_state(
             "proof membership verification failed (invalid proof)",
         ));
     }
+
+    // set metadata for this consensus state
+    set_consensus_meta(
+        &env,
+        deps.storage,
+        EMPTY_PREFIX,
+        &new_client_state.latest_height.unwrap(),
+    )?;
 
     // Build up the response
     wrap_response(
@@ -849,15 +860,15 @@ pub fn verify_channel_state(
 
 pub fn verify_packet_commitment(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     _me: ClientState,
     height: Height,
     commitment_prefix: MerklePrefix,
     proof: String,
     port_id: String,
     channel_id: String,
-    current_timestamp: u64,
-    delay_period: u64,
+    delay_time_period: u64,
+    delay_block_period: u64,
     sequence: u64,
     commitment_bytes: String,
     consensus_state: ConsensusState,
@@ -870,7 +881,14 @@ pub fn verify_packet_commitment(
     let root: Vec<u8> = from_base64(&consensus_state.root.hash, "msg.consensus_state.root")?;
 
     // Check delay period has passed
-    verify_delay_period_passed(deps, height, current_timestamp, delay_period)?;
+    verify_delay_period_passed(
+        deps,
+        height,
+        env.block.height,
+        env.block.time,
+        delay_time_period,
+        delay_block_period,
+    )?;
 
     // Build path (proof is used to validate the existance of value under that path)
     let commitment_path = IcsPath::Commitments {
@@ -901,15 +919,15 @@ pub fn verify_packet_commitment(
 
 pub fn verify_packet_acknowledgment(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     _me: ClientState,
     height: Height,
     commitment_prefix: MerklePrefix,
     proof: String,
     port_id: String,
     channel_id: String,
-    current_timestamp: u64,
-    delay_period: u64,
+    delay_time_period: u64,
+    delay_block_period: u64,
     sequence: u64,
     acknowledgement: String,
     consensus_state: ConsensusState,
@@ -922,7 +940,14 @@ pub fn verify_packet_acknowledgment(
     let root: Vec<u8> = from_base64(&consensus_state.root.hash, "msg.consensus_state.root")?;
 
     // Check delay period has passed
-    verify_delay_period_passed(deps, height, current_timestamp, delay_period)?;
+    verify_delay_period_passed(
+        deps,
+        height,
+        env.block.height,
+        env.block.time,
+        delay_time_period,
+        delay_block_period,
+    )?;
 
     // Build path (proof is used to validate the existance of value under that path)
     let ack_path = IcsPath::Acks {
@@ -953,15 +978,15 @@ pub fn verify_packet_acknowledgment(
 
 pub fn verify_packet_receipt_absence(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     _me: ClientState,
     height: Height,
     commitment_prefix: MerklePrefix,
     proof: String,
     port_id: String,
     channel_id: String,
-    current_timestamp: u64,
-    delay_period: u64,
+    delay_time_period: u64,
+    delay_block_period: u64,
     sequence: u64,
     consensus_state: ConsensusState,
 ) -> Result<HandleResponse, StdError> {
@@ -973,7 +998,14 @@ pub fn verify_packet_receipt_absence(
     let root: Vec<u8> = from_base64(&consensus_state.root.hash, "msg.consensus_state.root")?;
 
     // Check delay period has passed
-    verify_delay_period_passed(deps, height, current_timestamp, delay_period)?;
+    verify_delay_period_passed(
+        deps,
+        height,
+        env.block.height,
+        env.block.time,
+        delay_time_period,
+        delay_block_period,
+    )?;
 
     // Build path (proof is used to validate the existance of value under that path)
     let reciept_path = IcsPath::Receipts {
@@ -1008,15 +1040,15 @@ pub fn verify_packet_receipt_absence(
 
 pub fn verify_next_sequence_recv(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     _me: ClientState,
     height: Height,
     commitment_prefix: MerklePrefix,
     proof: String,
     port_id: String,
     channel_id: String,
-    current_timestamp: u64,
-    delay_period: u64,
+    delay_time_period: u64,
+    delay_block_period: u64,
     next_sequence_recv: u64,
     consensus_state: ConsensusState,
 ) -> Result<HandleResponse, StdError> {
@@ -1028,7 +1060,14 @@ pub fn verify_next_sequence_recv(
     let root: Vec<u8> = from_base64(&consensus_state.root.hash, "msg.consensus_state.root")?;
 
     // Check delay period has passed
-    verify_delay_period_passed(deps, height, current_timestamp, delay_period)?;
+    verify_delay_period_passed(
+        deps,
+        height,
+        env.block.height,
+        env.block.time,
+        delay_time_period,
+        delay_block_period,
+    )?;
 
     // Build path (proof is used to validate the existance of value under that path)
     let next_sequence_recv_path = IcsPath::SeqRecvs(
@@ -1122,10 +1161,7 @@ pub fn check_substitute_client_state(
             set_consensus_state(deps.storage, SUBJECT_PREFIX, &height, &cs_bytes.unwrap())?;
         }
 
-        let processed_time = get_processed_time(deps.storage, SUBSTITUTE_PREFIX, &height);
-        if processed_time.is_ok() {
-            set_processed_time(deps.storage, SUBJECT_PREFIX, &height, &processed_time.unwrap())?;
-        }
+        set_consensus_meta(&env, deps.storage, SUBJECT_PREFIX, &height)?;
     }
 
     new_client_state.latest_height = substitute_client_state.latest_height;
@@ -1133,8 +1169,10 @@ pub fn check_substitute_client_state(
     let latest_consensus_state_bytes =
         get_consensus_state(deps.storage, SUBJECT_PREFIX, &me.latest_height.unwrap())?;
 
-    let latest_consensus_state = PartialConsensusState::decode(latest_consensus_state_bytes.as_slice()).unwrap();
-    let latest_light_consensus_state: LightConsensusState = LightConsensusState::from_rlp(&latest_consensus_state.data).map_err(to_generic_err)?;
+    let latest_consensus_state =
+        PartialConsensusState::decode(latest_consensus_state_bytes.as_slice()).unwrap();
+    let latest_light_consensus_state: LightConsensusState =
+        LightConsensusState::from_rlp(&latest_consensus_state.data).map_err(to_generic_err)?;
 
     if is_expired(
         current_timestamp,
@@ -1190,16 +1228,32 @@ fn status(
 fn verify_delay_period_passed(
     deps: DepsMut,
     proof_height: Height,
+    current_height: u64,
     current_timestamp: u64,
-    delay_period: u64,
+    delay_time_period: u64,
+    delay_block_period: u64,
 ) -> Result<(), StdError> {
     let processed_time = get_processed_time(deps.storage, EMPTY_PREFIX, &proof_height)?;
-    let valid_time = processed_time + delay_period;
+    let valid_time = processed_time + delay_time_period;
 
-    if valid_time > current_timestamp {
+    if current_timestamp < valid_time {
         return Err(StdError::generic_err(format!(
             "cannot verify packet until time: {}, current time: {}",
             valid_time, current_timestamp
+        )));
+    }
+
+    let processed_height: Height = get_processed_height(deps.storage, EMPTY_PREFIX, &proof_height)?;
+    let valid_height = Height {
+        revision_number: processed_height.revision_number,
+        revision_height: processed_height.revision_height + delay_block_period,
+    };
+
+    let current_height = get_self_height(current_height);
+    if current_height < valid_height {
+        return Err(StdError::generic_err(format!(
+            "cannot verify packet until height: {}, current height: {}",
+            valid_height, current_height
         )));
     }
 

@@ -77,8 +77,8 @@ pub enum HandleMsg {
         proof: String, // Go serializes []byte to base64 encoded string
         port_id: String,
         channel_id: String,
-        current_timestamp: u64,
-        delay_period: u64,
+        delay_time_period: u64,
+        delay_block_period: u64,
         sequence: u64,
         commitment_bytes: String, // Go serializes []byte to base64 encoded string
         consensus_state: ConsensusState,
@@ -90,8 +90,8 @@ pub enum HandleMsg {
         proof: String, // Go serializes []byte to base64 encoded string
         port_id: String,
         channel_id: String,
-        current_timestamp: u64,
-        delay_period: u64,
+        delay_time_period: u64,
+        delay_block_period: u64,
         sequence: u64,
         acknowledgement: String, // Go serializes []byte to base64 encoded string
         consensus_state: ConsensusState,
@@ -103,8 +103,8 @@ pub enum HandleMsg {
         proof: String, // Go serializes []byte to base64 encoded string
         port_id: String,
         channel_id: String,
-        current_timestamp: u64,
-        delay_period: u64,
+        delay_time_period: u64,
+        delay_block_period: u64,
         sequence: u64,
         consensus_state: ConsensusState,
     },
@@ -115,8 +115,8 @@ pub enum HandleMsg {
         proof: String, // Go serializes []byte to base64 encoded string
         port_id: String,
         channel_id: String,
-        current_timestamp: u64,
-        delay_period: u64,
+        delay_time_period: u64,
+        delay_block_period: u64,
         next_sequence_recv: u64,
         consensus_state: ConsensusState,
     },
