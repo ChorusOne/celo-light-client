@@ -1,6 +1,7 @@
 use crate::traits::FromRlp;
-use cosmwasm_std::{from_slice, StdError};
+use cosmwasm_std::{from_slice, StdError, StdResult};
 use serde::de::DeserializeOwned;
+use std::any::type_name;
 
 pub fn from_base64<S: Into<String>>(
     base64_data: &String,
@@ -11,7 +12,7 @@ pub fn from_base64<S: Into<String>>(
         Err(e) => {
             return Err(StdError::parse_err(
                 target_type,
-                format!("Unable to base64 decode data. Error: {}", e)
+                format!("Unable to base64 decode data. Error: {}", e),
             ))
         }
     }
@@ -47,4 +48,11 @@ where
     })?;
 
     Ok(t)
+}
+
+pub fn must_deserialize<T: DeserializeOwned>(value: &Option<Vec<u8>>) -> StdResult<T> {
+    match value {
+        Some(vec) => from_slice(&vec),
+        None => Err(StdError::not_found(type_name::<T>())),
+    }
 }

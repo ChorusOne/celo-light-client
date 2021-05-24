@@ -1,6 +1,7 @@
 use crate::contract::types::ibc::{Channel, ConnectionEnd, Height, MerklePrefix};
 use crate::contract::types::wasm::{
-    ClientState, ConsensusState, CosmosClientState, CosmosConsensusState, Misbehaviour, WasmHeader,
+    ClientState, ConsensusState, CosmosClientState, CosmosConsensusState, Misbehaviour, Status,
+    WasmHeader,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -124,6 +125,16 @@ pub enum HandleMsg {
         next_sequence_recv: u64,
         consensus_state: ConsensusState,
     },
+    CheckSubstituteAndUpdateState {
+        me: ClientState,
+        substitute_client_state: ClientState,
+        subject_consensus_state: ConsensusState,
+        initial_height: Height,
+    },
+    Status {
+        me: ClientState,
+        consensus_state: ConsensusState,
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
@@ -202,6 +213,17 @@ pub struct VerifyPacketReceiptAbsenceResult {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
+pub struct CheckSubstituteAndUpdateStateResult {
+    pub result: ClientStateCallResponseResult,
+    pub new_client_state: ClientState,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
+pub struct StatusResult {
+    pub status: Status,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum QueryMsg {
     ProcessedTime { height: Height },
@@ -214,9 +236,9 @@ pub struct ProcessedTimeResponse {
 
 impl ClientStateCallResponseResult {
     pub fn success() -> Self {
-       Self {
+        Self {
             is_valid: true,
             err_msg: "".to_owned(),
-       }
+        }
     }
 }
