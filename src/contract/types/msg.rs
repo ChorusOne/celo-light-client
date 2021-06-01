@@ -1,6 +1,7 @@
 use crate::contract::types::ibc::{Channel, ConnectionEnd, Height, MerklePrefix};
 use crate::contract::types::wasm::{
-    ClientState, ConsensusState, CosmosClientState, CosmosConsensusState, Misbehaviour, WasmHeader,
+    ClientState, ConsensusState, CosmosClientState, CosmosConsensusState, Misbehaviour, Status,
+    WasmHeader,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -13,11 +14,6 @@ pub enum HandleMsg {
         me: ClientState,
     },
     CheckHeaderAndUpdateState {
-        header: WasmHeader,
-        consensus_state: ConsensusState,
-        me: ClientState,
-    },
-    CheckProposedHeaderAndUpdateState {
         header: WasmHeader,
         consensus_state: ConsensusState,
         me: ClientState,
@@ -81,8 +77,8 @@ pub enum HandleMsg {
         proof: String, // Go serializes []byte to base64 encoded string
         port_id: String,
         channel_id: String,
-        current_timestamp: u64,
-        delay_period: u64,
+        delay_time_period: u64,
+        delay_block_period: u64,
         sequence: u64,
         commitment_bytes: String, // Go serializes []byte to base64 encoded string
         consensus_state: ConsensusState,
@@ -94,8 +90,8 @@ pub enum HandleMsg {
         proof: String, // Go serializes []byte to base64 encoded string
         port_id: String,
         channel_id: String,
-        current_timestamp: u64,
-        delay_period: u64,
+        delay_time_period: u64,
+        delay_block_period: u64,
         sequence: u64,
         acknowledgement: String, // Go serializes []byte to base64 encoded string
         consensus_state: ConsensusState,
@@ -107,8 +103,8 @@ pub enum HandleMsg {
         proof: String, // Go serializes []byte to base64 encoded string
         port_id: String,
         channel_id: String,
-        current_timestamp: u64,
-        delay_period: u64,
+        delay_time_period: u64,
+        delay_block_period: u64,
         sequence: u64,
         consensus_state: ConsensusState,
     },
@@ -119,9 +115,19 @@ pub enum HandleMsg {
         proof: String, // Go serializes []byte to base64 encoded string
         port_id: String,
         channel_id: String,
-        current_timestamp: u64,
-        delay_period: u64,
+        delay_time_period: u64,
+        delay_block_period: u64,
         next_sequence_recv: u64,
+        consensus_state: ConsensusState,
+    },
+    CheckSubstituteAndUpdateState {
+        me: ClientState,
+        substitute_client_state: ClientState,
+        subject_consensus_state: ConsensusState,
+        initial_height: Height,
+    },
+    Status {
+        me: ClientState,
         consensus_state: ConsensusState,
     },
 }
@@ -202,6 +208,17 @@ pub struct VerifyPacketReceiptAbsenceResult {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
+pub struct CheckSubstituteAndUpdateStateResult {
+    pub result: ClientStateCallResponseResult,
+    pub new_client_state: ClientState,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
+pub struct StatusResult {
+    pub status: Status,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum QueryMsg {
     ProcessedTime { height: Height },
@@ -214,9 +231,9 @@ pub struct ProcessedTimeResponse {
 
 impl ClientStateCallResponseResult {
     pub fn success() -> Self {
-       Self {
+        Self {
             is_valid: true,
             err_msg: "".to_owned(),
-       }
+        }
     }
 }

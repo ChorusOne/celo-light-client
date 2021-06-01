@@ -49,7 +49,7 @@ impl FromRlp for Vec<Validator> {
 }
 
 /// Config contains state related configuration flags
-#[derive(Serialize, Deserialize, RlpEncodable, RlpDecodable, Clone, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, RlpEncodable, RlpDecodable, Clone, PartialEq, Eq, Debug)]
 pub struct Config {
     pub epoch_size: u64,
     pub allowed_clock_skew: u64,
@@ -102,7 +102,6 @@ pub struct Snapshot {
     pub validators: Vec<Validator>,
 
     // Hash and aggregated seal are required to validate the header against the validator set
-
     /// Block hash
     pub hash: Hash,
 
