@@ -1,6 +1,6 @@
 [![Build Status][travis-badge]][travis]
 
-[travis-badge]: https://travis-ci.org/ChorusOne/celo-light-client.svg?branch=master
+[travis-badge]: https://travis-ci.org/ChorusOne/celo-light-client.svg?branch=main
 [travis]: https://travis-ci.org/ChorusOne/celo-light-client/
 
 # Celo Light Client
