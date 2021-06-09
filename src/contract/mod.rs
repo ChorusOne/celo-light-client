@@ -1277,7 +1277,7 @@ fn is_expired(
     latest_timestamp: u64,
     light_client_state: &LightClientState,
 ) -> bool {
-    latest_timestamp + light_client_state.trusting_period > current_timestamp
+    current_timestamp > latest_timestamp + light_client_state.trusting_period
 }
 
 #[cfg(test)]
