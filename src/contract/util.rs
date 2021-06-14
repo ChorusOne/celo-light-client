@@ -1,6 +1,6 @@
 use byteorder::{BigEndian, ByteOrder};
 use cosmwasm_std::{attr, to_vec, Binary};
-use cosmwasm_std::{HandleResponse, StdError};
+use cosmwasm_std::{HandleResponse, StdError, StdResult};
 use serde::Serialize;
 use std::fmt::Display;
 
@@ -31,4 +31,9 @@ where
     StdError::GenericErr {
         msg: err.to_string(),
     }
+}
+
+// TODO: temporary remap, once ICS is settled this should be removed
+pub fn to_binary(t: HandleResponse) -> Binary {
+    t.data.unwrap()
 }

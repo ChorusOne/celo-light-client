@@ -32,6 +32,111 @@ pub enum HandleMsg {
         consensus_state_1: ConsensusState,
         consensus_state_2: ConsensusState,
     },
+    CheckSubstituteAndUpdateState {
+        me: ClientState,
+        substitute_client_state: ClientState,
+        subject_consensus_state: ConsensusState,
+        initial_height: Height,
+    },
+    ZeroCustomFields {
+        me: ClientState,
+    },
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
+pub struct ClientStateCallResponse {
+    pub me: ClientState,
+    pub result: ClientStateCallResponseResult,
+    pub new_client_state: ClientState,
+    pub new_consensus_state: ConsensusState,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
+pub struct ClientStateCallResponseResult {
+    pub is_valid: bool,
+    pub err_msg: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
+pub struct InitializeStateResult {
+    pub result: ClientStateCallResponseResult,
+    pub me: ClientState,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
+pub struct CheckHeaderAndUpdateStateResult {
+    pub new_client_state: ClientState,
+    pub new_consensus_state: ConsensusState,
+    pub result: ClientStateCallResponseResult,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
+pub struct VerifyUpgradeAndUpdateStateResult {
+    pub result: ClientStateCallResponseResult,
+    pub new_client_state: ClientState,
+    pub new_consensus_state: ConsensusState,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
+pub struct CheckMisbehaviourAndUpdateStateResult {
+    pub result: ClientStateCallResponseResult,
+    pub new_client_state: ClientState,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
+pub struct VerifyClientConsensusStateResult {
+    pub result: ClientStateCallResponseResult,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
+pub struct VerifyClientStateResult {
+    pub result: ClientStateCallResponseResult,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
+pub struct VerifyConnectionStateResult {
+    pub result: ClientStateCallResponseResult,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
+pub struct VerifyChannelStateResult {
+    pub result: ClientStateCallResponseResult,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
+pub struct VerifyPacketCommitmentResult {
+    pub result: ClientStateCallResponseResult,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
+pub struct VerifyPacketAcknowledgementResult {
+    pub result: ClientStateCallResponseResult,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
+pub struct VerifyPacketReceiptAbsenceResult {
+    pub result: ClientStateCallResponseResult,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
+pub struct CheckSubstituteAndUpdateStateResult {
+    pub result: ClientStateCallResponseResult,
+    pub new_client_state: ClientState,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
+pub struct ZeroCustomFieldsResult {
+    pub me: ClientState,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
+pub struct StatusResult {
+    pub status: Status,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum QueryMsg {
     VerifyClientState {
         me: ClientState,
         height: Height,
@@ -120,107 +225,10 @@ pub enum HandleMsg {
         next_sequence_recv: u64,
         consensus_state: ConsensusState,
     },
-    CheckSubstituteAndUpdateState {
-        me: ClientState,
-        substitute_client_state: ClientState,
-        subject_consensus_state: ConsensusState,
-        initial_height: Height,
-    },
     Status {
         me: ClientState,
         consensus_state: ConsensusState,
     },
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
-pub struct ClientStateCallResponse {
-    pub me: ClientState,
-    pub result: ClientStateCallResponseResult,
-    pub new_client_state: ClientState,
-    pub new_consensus_state: ConsensusState,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
-pub struct ClientStateCallResponseResult {
-    pub is_valid: bool,
-    pub err_msg: String,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
-pub struct InitializeStateResult {
-    pub result: ClientStateCallResponseResult,
-    pub me: ClientState,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
-pub struct CheckHeaderAndUpdateStateResult {
-    pub new_client_state: ClientState,
-    pub new_consensus_state: ConsensusState,
-    pub result: ClientStateCallResponseResult,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
-pub struct VerifyUpgradeAndUpdateStateResult {
-    pub result: ClientStateCallResponseResult,
-    pub new_client_state: ClientState,
-    pub new_consensus_state: ConsensusState,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
-pub struct CheckMisbehaviourAndUpdateStateResult {
-    pub result: ClientStateCallResponseResult,
-    pub new_client_state: ClientState,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
-pub struct VerifyClientConsensusStateResult {
-    pub result: ClientStateCallResponseResult,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
-pub struct VerifyClientStateResult {
-    pub result: ClientStateCallResponseResult,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
-pub struct VerifyConnectionStateResult {
-    pub result: ClientStateCallResponseResult,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
-pub struct VerifyChannelStateResult {
-    pub result: ClientStateCallResponseResult,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
-pub struct VerifyPacketCommitmentResult {
-    pub result: ClientStateCallResponseResult,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
-pub struct VerifyPacketAcknowledgementResult {
-    pub result: ClientStateCallResponseResult,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
-pub struct VerifyPacketReceiptAbsenceResult {
-    pub result: ClientStateCallResponseResult,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
-pub struct CheckSubstituteAndUpdateStateResult {
-    pub result: ClientStateCallResponseResult,
-    pub new_client_state: ClientState,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
-pub struct StatusResult {
-    pub status: Status,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
-#[serde(rename_all = "lowercase")]
-pub enum QueryMsg {
     ProcessedTime { height: Height },
 }
 
