@@ -22,14 +22,14 @@ use crate::contract::{
         VerifyChannelStateResult, VerifyClientConsensusStateResult, VerifyClientStateResult,
         VerifyConnectionStateResult, VerifyPacketAcknowledgementResult,
         VerifyPacketCommitmentResult, VerifyPacketReceiptAbsenceResult,
-        VerifyUpgradeAndUpdateStateResult,
+        VerifyUpgradeAndUpdateStateResult, ZeroCustomFieldsResult
     },
     types::state::{LightClientState, LightConsensusState},
     types::wasm::{
         ClientState, ConsensusState, CosmosClientState, CosmosConsensusState, Misbehaviour,
         PartialConsensusState, Status, WasmHeader,
     },
-    util::{to_generic_err, u64_to_big_endian, wrap_response},
+    util::{to_generic_err, u64_to_big_endian, wrap_response, to_binary},
 };
 use crate::{state::State, traits::FromRlp, traits::ToRlp, types::header::Header};
 
@@ -151,7 +151,33 @@ pub(crate) fn handle(
             last_height_consensus_state,
         ),
 
-        HandleMsg::VerifyClientState {
+        HandleMsg::CheckSubstituteAndUpdateState {
+            me,
+            substitute_client_state,
+            subject_consensus_state,
+            initial_height,
+        } => check_substitute_client_state(
+            deps,
+            env,
+            me,
+            substitute_client_state,
+            subject_consensus_state,
+            initial_height,
+        ),
+
+        HandleMsg::ZeroCustomFields {
+            me,
+        } => zero_custom_fields(
+            deps,
+            env,
+            me,
+        ),
+    }
+}
+
+pub(crate) fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    match msg {
+        QueryMsg::VerifyClientState {
             me,
             height,
             commitment_prefix,
@@ -169,9 +195,9 @@ pub(crate) fn handle(
             proof,
             counterparty_client_state,
             consensus_state,
-        ),
+        ).map(to_binary),
 
-        HandleMsg::VerifyClientConsensusState {
+        QueryMsg::VerifyClientConsensusState {
             me,
             height,
             consensus_height,
@@ -191,9 +217,9 @@ pub(crate) fn handle(
             proof,
             counterparty_consensus_state,
             consensus_state,
-        ),
+        ).map(to_binary),
 
-        HandleMsg::VerifyConnectionState {
+        QueryMsg::VerifyConnectionState {
             me,
             height,
             commitment_prefix,
@@ -211,9 +237,9 @@ pub(crate) fn handle(
             connection_id,
             connection_end,
             consensus_state,
-        ),
+        ).map(to_binary),
 
-        HandleMsg::VerifyChannelState {
+        QueryMsg::VerifyChannelState {
             me,
             height,
             commitment_prefix,
@@ -233,9 +259,9 @@ pub(crate) fn handle(
             channel_id,
             channel,
             consensus_state,
-        ),
+        ).map(to_binary),
 
-        HandleMsg::VerifyPacketCommitment {
+        QueryMsg::VerifyPacketCommitment {
             me,
             height,
             commitment_prefix,
@@ -261,9 +287,9 @@ pub(crate) fn handle(
             sequence,
             commitment_bytes,
             consensus_state,
-        ),
+        ).map(to_binary),
 
-        HandleMsg::VerifyPacketAcknowledgement {
+        QueryMsg::VerifyPacketAcknowledgement {
             me,
             height,
             commitment_prefix,
@@ -289,9 +315,9 @@ pub(crate) fn handle(
             sequence,
             acknowledgement,
             consensus_state,
-        ),
+        ).map(to_binary),
 
-        HandleMsg::VerifyPacketReceiptAbsence {
+        QueryMsg::VerifyPacketReceiptAbsence {
             me,
             height,
             commitment_prefix,
@@ -315,9 +341,9 @@ pub(crate) fn handle(
             delay_block_period,
             sequence,
             consensus_state,
-        ),
+        ).map(to_binary),
 
-        HandleMsg::VerifyNextSequenceRecv {
+        QueryMsg::VerifyNextSequenceRecv {
             me,
             height,
             commitment_prefix,
@@ -341,37 +367,19 @@ pub(crate) fn handle(
             delay_block_period,
             next_sequence_recv,
             consensus_state,
-        ),
+        ).map(to_binary),
 
-        HandleMsg::CheckSubstituteAndUpdateState {
-            me,
-            substitute_client_state,
-            subject_consensus_state,
-            initial_height,
-        } => check_substitute_client_state(
-            deps,
-            env,
-            me,
-            substitute_client_state,
-            subject_consensus_state,
-            initial_height,
-        ),
-
-        HandleMsg::Status {
-            me,
-            consensus_state,
-        } => status(deps, env, me, consensus_state),
-    }
-}
-
-pub(crate) fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    match msg {
         QueryMsg::ProcessedTime { height } => {
             let processed_time = get_processed_time(deps.storage, EMPTY_PREFIX, &height)?;
             Ok(cosmwasm_std::to_binary(&ProcessedTimeResponse {
                 time: processed_time,
             })?)
-        }
+        },
+
+        QueryMsg::Status {
+            me,
+            consensus_state,
+        } => status(deps, env, me, consensus_state).map(to_binary),
     }
 }
 
@@ -644,6 +652,33 @@ pub fn check_misbehaviour(
     })
 }
 
+// zero_custom_fields returns a ClientState that is a copy of the current ClientState
+// with all client customizable fields zeroed out
+pub fn zero_custom_fields(
+    _deps: DepsMut,
+    _env: Env,
+    me: ClientState,
+) -> Result<HandleResponse, StdError> {
+    let new_client_state = ClientState {
+        code_id: me.code_id,
+        frozen: false,
+        frozen_height: None,
+        latest_height: None,
+        r#type: me.r#type,
+
+        // No custom fields in light client state
+        data: me.data.clone(),
+    };
+
+    // Build up the response
+    wrap_response(
+        &ZeroCustomFieldsResult {
+            me: new_client_state,
+        },
+        "zero_custom_fields",
+    )
+}
+
 pub fn check_misbehaviour_header(
     num: u16,
     me: &ClientState,
@@ -671,7 +706,7 @@ pub fn check_misbehaviour_header(
 }
 
 pub fn verify_client_state(
-    _deps: DepsMut,
+    _deps: Deps,
     _env: Env,
     _me: ClientState,
     _height: Height,
@@ -717,7 +752,7 @@ pub fn verify_client_state(
 }
 
 pub fn verify_client_consensus_state(
-    _deps: DepsMut,
+    _deps: Deps,
     _env: Env,
     _me: ClientState,
     _height: Height,
@@ -766,7 +801,7 @@ pub fn verify_client_consensus_state(
 }
 
 pub fn verify_connection_state(
-    _deps: DepsMut,
+    _deps: Deps,
     _env: Env,
     _me: ClientState,
     _height: Height,
@@ -811,7 +846,7 @@ pub fn verify_connection_state(
 }
 
 pub fn verify_channel_state(
-    _deps: DepsMut,
+    _deps: Deps,
     _env: Env,
     _me: ClientState,
     _height: Height,
@@ -859,7 +894,7 @@ pub fn verify_channel_state(
 }
 
 pub fn verify_packet_commitment(
-    deps: DepsMut,
+    deps: Deps,
     env: Env,
     _me: ClientState,
     height: Height,
@@ -918,7 +953,7 @@ pub fn verify_packet_commitment(
 }
 
 pub fn verify_packet_acknowledgment(
-    deps: DepsMut,
+    deps: Deps,
     env: Env,
     _me: ClientState,
     height: Height,
@@ -977,7 +1012,7 @@ pub fn verify_packet_acknowledgment(
 }
 
 pub fn verify_packet_receipt_absence(
-    deps: DepsMut,
+    deps: Deps,
     env: Env,
     _me: ClientState,
     height: Height,
@@ -1039,7 +1074,7 @@ pub fn verify_packet_receipt_absence(
 }
 
 pub fn verify_next_sequence_recv(
-    deps: DepsMut,
+    deps: Deps,
     env: Env,
     _me: ClientState,
     height: Height,
@@ -1192,7 +1227,7 @@ pub fn check_substitute_client_state(
 }
 
 fn status(
-    _deps: DepsMut,
+    _deps: Deps,
     env: Env,
     me: ClientState,
     consensus_state: ConsensusState,
@@ -1226,7 +1261,7 @@ fn status(
 // verify_delay_period_passed will ensure that at least delayPeriod amount of time has passed since consensus state was submitted
 // before allowing verification to continue
 fn verify_delay_period_passed(
-    deps: DepsMut,
+    deps: Deps,
     proof_height: Height,
     current_height: u64,
     current_timestamp: u64,
