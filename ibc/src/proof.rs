@@ -1,4 +1,4 @@
-use crate::{IBCMerkleRoot, ICSInnerSpec, ICSLeafOp, ICSProofSpec, Error, Kind};
+use crate::{IBCMerkleRoot, IBCMerklePrefix, ICSInnerSpec, ICSLeafOp, ICSProofSpec, Error, Kind};
 use std::convert::{From, TryFrom, TryInto};
 use ethereum_types::H256;
 
@@ -6,6 +6,22 @@ use ethereum_types::H256;
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct MerklePrefix {
     pub key_prefix: String, // Go serializes []byte to base64 encoded string
+}
+impl From<IBCMerklePrefix> for MerklePrefix {
+    fn from(ibc: IBCMerklePrefix) -> Self {
+        Self {
+            key_prefix: base64::encode(ibc.key_prefix),
+        }
+    }
+}
+impl TryFrom<MerklePrefix> for IBCMerklePrefix {
+    type Error = base64::DecodeError;
+    fn try_from(m: MerklePrefix) -> Result<Self, Self::Error> {
+        let s = Self {
+            key_prefix: base64::decode(m.key_prefix)?,
+        };
+        Ok(s)
+    }
 }
 
 // Origin: ibc.core.commitment.v1 (compiled proto)

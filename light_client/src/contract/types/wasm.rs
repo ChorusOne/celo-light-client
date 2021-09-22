@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 // we don't know how the consensus or client state will look like.
 //
 // NOTE: This is just a placeholder
-#[derive(Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct CosmosConsensusState {
     pub root: MerkleRoot,
 }

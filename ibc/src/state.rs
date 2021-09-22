@@ -6,7 +6,6 @@ use crate::{
 use celo_types::{client::LightClientState, consensus::LightConsensusState};
 use ibc_proto::ibc::core::client::v1::Height;
 use std::convert::{From, TryFrom};
-use std::iter::FromIterator;
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct ConsensusState {

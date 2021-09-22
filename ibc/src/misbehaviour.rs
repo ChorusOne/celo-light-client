@@ -6,7 +6,7 @@ pub use ibc_proto::ibc::lightclients::wasm::v1::Header as IBCHeader;
 pub use ibc_proto::ibc::lightclients::wasm::v1::Misbehaviour as IBCMisbehaviour;
 use std::convert::{From, TryFrom, TryInto};
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct Misbehaviour {
     pub client_id: String,
     pub header_1: Header,

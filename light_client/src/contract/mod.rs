@@ -21,13 +21,14 @@ use crate::contract::util::*;
 use celo_types::state::State;
 
 use celo_ibc::{extract_header, extract_lc_client_state, extract_lc_consensus_state};
-use celo_ibc::{ClientState, ConsensusState, Header, MerkleRoot, Misbehaviour};
+use celo_ibc::{
+    Channel, ClientState, ConnectionEnd, ConsensusState, Header, MerklePrefix, MerkleRoot,
+    Misbehaviour,
+};
 use celo_types::header::Header as CeloHeader;
 use celo_types::{client::LightClientState, consensus::LightConsensusState};
-use ibc_proto::ibc::core::channel::v1::Channel;
 use ibc_proto::ibc::core::client::v1::Height;
-use ibc_proto::ibc::core::commitment::v1::{MerklePrefix, MerkleProof};
-use ibc_proto::ibc::core::connection::v1::ConnectionEnd;
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use cosmwasm_std::{attr, to_binary, to_vec, Binary};
 use cosmwasm_std::{Deps, DepsMut, Env, MessageInfo};
@@ -126,7 +127,6 @@ pub(crate) fn handle(
             consensus_state_1,
             consensus_state_2,
         ),
-
         HandleMsg::VerifyUpgradeAndUpdateState {
             me,
             new_client_state,
@@ -184,7 +184,6 @@ pub(crate) fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryRespo
             counterparty_client_state,
             consensus_state,
         ),
-
         QueryMsg::VerifyClientConsensusState {
             me,
             height,
@@ -206,7 +205,6 @@ pub(crate) fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryRespo
             counterparty_consensus_state,
             consensus_state,
         ),
-
         QueryMsg::VerifyConnectionState {
             me,
             height,
@@ -226,7 +224,6 @@ pub(crate) fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryRespo
             connection_end,
             consensus_state,
         ),
-
         QueryMsg::VerifyChannelState {
             me,
             height,
@@ -276,7 +273,6 @@ pub(crate) fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryRespo
             commitment_bytes,
             consensus_state,
         ),
-
         QueryMsg::VerifyPacketAcknowledgement {
             me,
             height,
@@ -304,7 +300,6 @@ pub(crate) fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryRespo
             acknowledgement,
             consensus_state,
         ),
-
         QueryMsg::VerifyPacketReceiptAbsence {
             me,
             height,
@@ -330,7 +325,6 @@ pub(crate) fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryRespo
             sequence,
             consensus_state,
         ),
-
         QueryMsg::VerifyNextSequenceRecv {
             me,
             height,
@@ -386,14 +380,11 @@ fn init_contract(
         })?;
 
     // Verify initial state
-    match light_consensus_state.verify() {
-        Err(e) => {
-            return Err(StdError::generic_err(format!(
-                "Initial state verification failed. Error: {}",
-                e
-            )))
-        }
-        _ => {}
+    if let Err(e) = light_consensus_state.verify() {
+        return Err(StdError::generic_err(format!(
+            "Initial state verification failed. Error: {}",
+            e
+        )));
     }
 
     // Set metadata for initial consensus state
@@ -497,7 +488,7 @@ pub fn verify_upgrade_and_update_state(
     //let specs = vec![ics23::iavl_spec(), ics23::tendermint_spec()];
 
     // Sanity check
-    if !(new_client_state.latest_height > me.latest_height) {
+    if new_client_state.latest_height <= me.latest_height {
         return Err(StdError::generic_err(format!(
             "upgraded client height {:?} must be at greater than current client height {:?}",
             new_client_state.latest_height, me.latest_height

@@ -1,15 +1,14 @@
-use ibc_proto::ibc::core::{
-    channel::v1::Channel, client::v1::Height, commitment::v1::MerklePrefix,
-    connection::v1::ConnectionEnd,
+use celo_ibc::{
+    Channel, ClientState, ConnectionEnd, ConsensusState, Header, MerklePrefix, Misbehaviour,
 };
-use celo_ibc::{ClientState, ConsensusState, Header, Misbehaviour};
+use ibc_proto::ibc::core::client::v1::Height;
 
 use crate::contract::types::wasm::{CosmosClientState, CosmosConsensusState, Status};
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum HandleMsg {
     InitializeState {
@@ -137,8 +136,8 @@ pub struct StatusResult {
     pub status: Status,
 }
 
-//#[derive(Serialize, Deserialize, JsonSchema)]
-//#[serde(rename_all = "lowercase")]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "lowercase")]
 pub enum QueryMsg {
     VerifyClientState {
         me: ClientState,
