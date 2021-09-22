@@ -1,25 +1,18 @@
+
 mod relayer;
+use relayer::Relayer;
 
-#[macro_use]
-extern crate serde_derive;
+use celo_types::client::Config;
+use celo_types::consensus::LightConsensusState;
+use celo_types::state::State;
+use celo_types::{get_epoch_last_block_number, get_epoch_number, Header};
 
-#[macro_use]
-extern crate clap;
-
-extern crate celo_light_client;
-use celo_light_client::*;
-use relayer::*;
-
-use clap::{App, Arg};
-use num::cast::ToPrimitive;
-
-extern crate log;
-use log::{info, error};
-
+use clap::{value_t, App, Arg};
+use log::{error, info};
 use std::time::{SystemTime, UNIX_EPOCH};
+use web3::types::{BlockNumber, U64};
 
-#[tokio::main]
-async fn main(){
+fn main() {
     env_logger::init();
 
     // setup CLI
@@ -76,19 +69,20 @@ async fn main(){
     // setup state container
     info!("Setting up storage");
     let state_config = Config {
-       epoch_size,
-       allowed_clock_skew: 5,
+        epoch_size,
+        allowed_clock_skew: 5,
 
-       verify_epoch_headers: validate_all_headers,
-       verify_non_epoch_headers: validate_all_headers,
-       verify_header_timestamp: true,
+        verify_epoch_headers: validate_all_headers,
+        verify_non_epoch_headers: validate_all_headers,
+        verify_header_timestamp: true,
     };
-    let snapshot = Snapshot::new();
+    let snapshot = LightConsensusState::default();
     let mut state = State::new(snapshot, &state_config);
 
     info!("Fetching latest block header from: {}", addr);
-    let current_block_header: Header = relayer.get_block_header_by_number("latest").await.unwrap();
-    let current_epoch_number: u64 = get_epoch_number(current_block_header.number.to_u64().unwrap(), epoch_size);
+    let current_block_header: Header = relayer.get_block_header_by_number(BlockNumber::Latest);
+    let current_epoch_number: u64 =
+        get_epoch_number(current_block_header.number.as_u64(), epoch_size);
 
     info!(
         "Syncing epoch headers from {} to epoch num: {} (last header num: {}, epoch size: {})",
@@ -97,24 +91,22 @@ async fn main(){
 
     // build up state from the genesis block to the latest
     for epoch in first_epoch..current_epoch_number {
-        let current_timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+        let current_timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
         let epoch_block_num = get_epoch_last_block_number(epoch, epoch_size);
-        let epoch_block_number_hex = format!("0x{:x}", epoch_block_num);
-        let header = relayer.get_block_header_by_number(&epoch_block_number_hex).await;
+        let header =
+            relayer.get_block_header_by_number(BlockNumber::Number(U64::from(epoch_block_num)));
 
-        if header.is_ok() {
-            match state.insert_header(&header.unwrap(), current_timestamp) {
-                Ok(_) => info!("[{}/{}] Inserted epoch header: {}", epoch + 1, current_epoch_number, epoch_block_number_hex),
-                Err(e) => error!("Failed to insert epoch header {}: {}", epoch_block_number_hex, e)
-            }
-        } else {
-            error!("Failed to fetch block header num: {}", epoch_block_number_hex);
+        match state.insert_header(&header, current_timestamp) {
+            Ok(_) => info!(
+                "[{}/{}] Inserted epoch header: {}",
+                epoch + 1,
+                current_epoch_number,
+                epoch_block_num
+            ),
+            Err(e) => error!("Failed to insert epoch header {}: {}", epoch_block_num, e),
         }
-    }
-
-    let current_timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
-    match state.verify_header(&current_block_header, current_timestamp) {
-        Ok(_) => info!("Succesfully validated latest header against local state: {}", current_block_header.number),
-        Err(e) => error!("Failed to validate latest header against local state: {}", e)
     }
 }
