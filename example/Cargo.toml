@@ -1,0 +1,14 @@
+[package]
+name = "celo-lightclient-example"
+version = "0.1.0"
+authors = ["Kaczanowski Mateusz <mateusz@chorus.one>"]
+edition = "2018"
+
+
+[dependencies]
+celo-types = {path = "../types", features = ["web3_support"]}
+celo-ibc = {path = "../ibc"}
+web3 = {version = "0.17"}
+clap = {version = "2.33"}
+log = {version = "0.4"}
+env_logger = {version = "0.8.2"}

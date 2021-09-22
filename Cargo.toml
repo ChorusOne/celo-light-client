@@ -1,2 +1,2 @@
 [workspace]
-members = ["./types", "./light_client", "./ibc"]
+members = ["./types", "./light_client", "./ibc", "./example"]
