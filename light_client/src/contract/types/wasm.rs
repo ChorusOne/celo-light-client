@@ -1,4 +1,5 @@
-use ibc_proto::ibc::core::{client::v1::Height, commitment::v1::MerkleRoot};
+use ibc_proto::ibc::core::{client::v1::Height};
+use celo_ibc::MerkleRoot;
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

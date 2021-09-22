@@ -1223,6 +1223,7 @@ dependencies = [
 [[package]]
 name = "ibc-proto"
 version = "0.9.1"
+source = "git+https://github.com/ChorusOne/ibc-rs?branch=giulio/celochain#5b8dc9994c3367a1e8baca554eb3d43ae1f5710a"
 dependencies = [
  "bytes",
  "getrandom 0.2.3",
@@ -2674,6 +2675,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.21.0"
+source = "git+https://github.com/ChorusOne/ibc-rs?branch=giulio/celochain#5b8dc9994c3367a1e8baca554eb3d43ae1f5710a"
 dependencies = [
  "anomaly",
  "bytes",
