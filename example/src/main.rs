@@ -47,7 +47,7 @@ fn main() {
                 .short("a")
                 .long("addr")
                 .takes_value(true)
-                .default_value("http://127.0.0.1:8545")
+                .default_value("http://localhost:8545")
                 .help("Removes the local database")
         )
         .get_matches();

@@ -1,8 +1,7 @@
 use celo_types::Header;
-use std::convert::{From, TryFrom};
-use web3::block_on;
+use std::convert::TryFrom;
 use web3::transports::Http;
-use web3::types::{BlockId, BlockNumber, U64};
+use web3::types::{BlockId, BlockNumber};
 
 pub struct Relayer {
     web3: web3::Web3<Http>,
@@ -16,11 +15,12 @@ impl Relayer {
     }
 
     pub fn get_block_header_by_number(&self, number: BlockNumber) -> Header {
+        let handle = tokio::runtime::Runtime::new().unwrap();
+        let _eg = handle.enter();
         let block_id = BlockId::Number(number);
-        let blk = block_on(self.web3.eth().block(block_id))
+        let blk = handle.block_on(self.web3.eth().block(block_id))
             .expect("couldn't find block number")
             .expect("block does not exist");
         Header::try_from(blk).expect("parsing the block to celo header")
     }
-
 }

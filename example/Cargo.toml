@@ -8,7 +8,9 @@ edition = "2018"
 [dependencies]
 celo-types = {path = "../types", features = ["web3_support"]}
 celo-ibc = {path = "../ibc"}
-web3 = {version = "0.17"}
+#web3 = {version = "0.17"}
+web3 = {git = "https://github.com/ChorusOne/rust-web3", branch = "celo", features = ["celo"]}
 clap = {version = "2.33"}
 log = {version = "0.4"}
 env_logger = {version = "0.8.2"}
+tokio = {version = "1.11"}

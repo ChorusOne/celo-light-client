@@ -254,6 +254,7 @@ dependencies = [
  "clap",
  "env_logger",
  "log",
+ "tokio",
  "web3",
 ]
 
@@ -3317,8 +3318,7 @@ dependencies = [
 [[package]]
 name = "web3"
 version = "0.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd24abe6f2b68e0677f843059faea87bcbd4892e39f02886f366d8222c3c540d"
+source = "git+https://github.com/ChorusOne/rust-web3?branch=celo#3ee5041da80ee88d1766b7045cfaf2c368d33442"
 dependencies = [
  "arrayvec 0.5.2",
  "base64",
@@ -3332,6 +3332,7 @@ dependencies = [
  "hex",
  "jsonrpc-core",
  "log",
+ "once_cell",
  "parking_lot",
  "pin-project",
  "reqwest",
