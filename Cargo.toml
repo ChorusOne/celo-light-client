@@ -24,8 +24,6 @@ bls-crypto = { git = "https://github.com/mkaczanowski/celo-bls-snark-rs", branch
 
 # cosmwasm contract deps
 cosmwasm-std = { version = "0.13.2", optional = true }
-cosmwasm-derive = { version = "0.13.2", optional = true }
-cosmwasm-storage = { version = "0.13.2", optional = true }
 schemars = { version = "0.7", optional = true }
 clear_on_drop = { version = "0.2.3", features = ["no_cc"], optional = true }
 base64 = { version = "0.13.0", optional = true }
@@ -75,8 +73,8 @@ incremental = false
 overflow-checks = true
 
 [features]
-default = ["cranelift", "wasm-contract"]
-wasm-contract = ["cosmwasm-std", "cosmwasm-derive", "cosmwasm-storage", "schemars", "clear_on_drop", "base64", "ics23", "ibc", "byteorder", "prost", "prost-derive"]
+default = ["wasm-contract"]
+wasm-contract = ["cosmwasm-std", "schemars", "clear_on_drop", "base64", "ics23", "ibc", "byteorder", "prost", "prost-derive"]
 # for quicker tests, cargo test --lib
 # for more explicit tests, cargo test --features=backtraces
 backtraces = ["cosmwasm-std/backtraces", "cosmwasm-vm/backtraces"]

@@ -352,9 +352,7 @@ dependencies = [
  "cfg-if 0.1.10",
  "clap",
  "clear_on_drop",
- "cosmwasm-derive",
  "cosmwasm-std",
- "cosmwasm-storage",
  "cosmwasm-vm",
  "env_logger",
  "hex 0.4.3",
@@ -512,16 +510,6 @@ dependencies = [
  "serde",
  "serde-json-wasm 0.2.3",
  "thiserror",
-]
-
-[[package]]
-name = "cosmwasm-storage"
-version = "0.13.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2cdb5f6c3181c921c02b0018af66178e60bc7be088f81ec730b22ff51240404"
-dependencies = [
- "cosmwasm-std",
- "serde",
 ]
 
 [[package]]
