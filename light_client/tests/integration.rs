@@ -78,4 +78,7 @@ fn test_init_contract() {
     let data: msg::InitializeStateResult = from_binary(&bin_data).unwrap();
     assert!(data.result.is_valid);
     assert_eq!(data.me.frozen_height, None);
+    assert_eq!(data.me.latest_height.revision_height, 0);
+
+
 }
