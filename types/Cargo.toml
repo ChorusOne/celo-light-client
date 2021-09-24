@@ -8,7 +8,7 @@ authors = ["Kaczanowski Mateusz <mateusz@chorus.one>"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"]}
-ethereum-types = {version = "0.11"}
+ethereum-types = {version = "0.11", default-features = false, features = ["rlp", "serialize"]}
 #web3 = {version = "0.17", optional = true}
 web3 = {git = "https://github.com/ChorusOne/rust-web3", branch = "celo", features = ["celo"], optional = true}
 rlp = {version = "0.5"}
@@ -16,7 +16,7 @@ rlp-derive = {version = "0.1"} # RlpEncodable and RlpDecodable have issues with 
 hex = { version = "0.4", features = ["serde"]}
 impl-rlp = {version = "0.3"}
 impl-serde = {version = "0.3"}
-fixed-hash = {version = "0.6"}
+fixed-hash = {version = "0.6", default-features = false}
 anomaly = { version = "0.2", default-features = false }
 thiserror = { version = "1.0", default-features = false }
 sha3 = { version = "0.9", default-features = false }
@@ -27,5 +27,4 @@ secp256k1 = { version = "0.20", features = ["bitcoin_hashes", "rand"] }
 rand = { version = "0.6"}
 
 [features]
-default = ["web3_support"]
 web3_support = ["web3"]

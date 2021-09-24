@@ -21,6 +21,7 @@ pub struct LightConsensusState {
 
 impl LightConsensusState {
     pub fn verify(&self) -> Result<(), Error> {
-        todo!()
+        //TODO!!!
+        Ok(())
     }
 }
