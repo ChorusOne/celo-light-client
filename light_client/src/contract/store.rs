@@ -1,5 +1,5 @@
 use crate::contract::serialization::must_deserialize;
-use ibc_proto::ibc::core::client::v1::Height;
+use celo_ibc::Height;
 
 use cosmwasm_std::{to_vec, Env, StdError, StdResult, Storage};
 

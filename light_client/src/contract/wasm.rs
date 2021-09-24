@@ -1,5 +1,5 @@
-use ibc_proto::ibc::core::{client::v1::Height};
-use celo_ibc::MerkleRoot;
+//use ibc_proto::ibc::core::{client::v1::Height};
+use celo_ibc::{Height, MerkleRoot};
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -19,11 +19,9 @@ pub struct CosmosClientState {
     pub latest_height: Height,
 }
 
-#[derive(prost::Message, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Default, Serialize, Deserialize, Clone, PartialEq)]
 pub struct PartialConsensusState {
-    #[prost(bytes = "vec", tag = "1")]
     pub code_id: Vec<u8>,
-    #[prost(bytes = "vec", tag = "2")]
     pub data: Vec<u8>,
 }
 

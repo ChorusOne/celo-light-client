@@ -1,9 +1,7 @@
-use celo_ibc::{
-    Channel, ClientState, ConnectionEnd, ConsensusState, Header, MerklePrefix, Misbehaviour,
-};
-use ibc_proto::ibc::core::client::v1::Height;
-
 use crate::contract::types::wasm::{CosmosClientState, CosmosConsensusState, Status};
+use celo_ibc::{
+    Channel, ClientState, ConnectionEnd, ConsensusState, Header, Height, MerklePrefix, Misbehaviour,
+};
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -45,7 +43,7 @@ pub enum HandleMsg {
     },
 }
 
-//#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
 pub struct ClientStateCallResponse {
     pub me: ClientState,
     pub result: ClientStateCallResponseResult,
@@ -57,6 +55,14 @@ pub struct ClientStateCallResponse {
 pub struct ClientStateCallResponseResult {
     pub is_valid: bool,
     pub err_msg: String,
+}
+impl ClientStateCallResponseResult {
+    pub fn success() -> Self {
+        Self {
+            is_valid: true,
+            err_msg: "".to_owned(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
@@ -239,13 +245,4 @@ pub enum QueryMsg {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
 pub struct ProcessedTimeResponse {
     pub time: u64,
-}
-
-impl ClientStateCallResponseResult {
-    pub fn success() -> Self {
-        Self {
-            is_valid: true,
-            err_msg: "".to_owned(),
-        }
-    }
 }

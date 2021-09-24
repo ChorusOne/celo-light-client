@@ -6,29 +6,21 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ethereum-types = {version = "0.11"}
-celo-types = {path = "../types"}
-celo-ibc = {path = "../ibc"}
 serde = { version = "1", features = ["derive"]}
-prost = {version = "0.8", features = ["prost-derive"]}
-rlp = {version = "0.5"}
-base64 = { version = "0.13"}
-hex = { version = "0.4"}
+celo-ibc = {path = "../ibc"}
+celo-types = {path = "../types"}
 anomaly = { version = "0.2", default-features = false }
 thiserror = { version = "1.0", default-features = false }
-
-ibc-proto = {git = "https://github.com/ChorusOne/ibc-rs", default-features = false, branch = "giulio/celochain"}
+rlp = {version = "0.5"}
+base64 = { version = "0.13"}
 
 # cosmwasm contract deps
-cosmwasm-std = { version = "0.16"}
-cosmwasm-derive = { version = "0.16"}
-cosmwasm-storage = { version = "0.16"}
+cosmwasm-std = { version = "0.16", default-features = false }
 schemars = { version = "0.8"}
 
 
 [dev-dependencies]
-cosmwasm-vm = {version = "0.16"}
-
+cosmwasm-vm = {version = "0.16", default-features = false }
 
 [lib]
 crate-type = ["cdylib", "rlib"]

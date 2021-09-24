@@ -1,39 +1,33 @@
+#![allow(dead_code)]
+
+pub mod msg;
+mod types;
+pub use msg::*;
 mod errors;
 mod serialization;
 mod state;
 mod store;
-mod types;
 mod util;
+mod wasm;
 
 use crate::contract::serialization::*;
-use crate::contract::store::EMPTY_PREFIX;
 use crate::contract::store::*;
-use crate::contract::types::msg::{
-    CheckHeaderAndUpdateStateResult, CheckMisbehaviourAndUpdateStateResult,
-    CheckSubstituteAndUpdateStateResult, ClientStateCallResponseResult, HandleMsg,
-    InitializeStateResult, ProcessedTimeResponse, QueryMsg, StatusResult, VerifyChannelStateResult,
-    VerifyClientConsensusStateResult, VerifyClientStateResult, VerifyConnectionStateResult,
-    VerifyPacketAcknowledgementResult, VerifyPacketCommitmentResult,
-    VerifyPacketReceiptAbsenceResult, VerifyUpgradeAndUpdateStateResult, ZeroCustomFieldsResult,
-};
-use crate::contract::types::wasm::*;
+use crate::contract::wasm::*;
 use crate::contract::util::*;
 use celo_types::state::State;
 
 use celo_ibc::{extract_header, extract_lc_client_state, extract_lc_consensus_state};
 use celo_ibc::{
-    Channel, ClientState, ConnectionEnd, ConsensusState, Header, MerklePrefix, MerkleRoot,
+    Channel, ClientState, ConnectionEnd, ConsensusState, Header, Height, MerklePrefix, MerkleRoot,
     Misbehaviour,
 };
 use celo_types::header::Header as CeloHeader;
 use celo_types::{client::LightClientState, consensus::LightConsensusState};
-use ibc_proto::ibc::core::client::v1::Height;
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use cosmwasm_std::{attr, to_binary, to_vec, Binary};
 use cosmwasm_std::{Deps, DepsMut, Env, MessageInfo};
 use cosmwasm_std::{QueryResponse, Response, StdError, StdResult};
-use prost::Message;
+//use prost::Message;
 
 // # A few notes on certain design decisions
 // ## Serialization
@@ -84,7 +78,7 @@ use prost::Message;
 // * proof - proof that CeloConsensusState is stored on CeloLC in CosmosNetwork
 // * counterparty_consensus_state - CeloConsensusState
 
-pub(crate) fn init(
+pub fn instantiate(
     _deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
@@ -97,7 +91,7 @@ pub(crate) fn init(
     Ok(Response::default())
 }
 
-pub(crate) fn handle(
+pub fn execute(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -108,7 +102,6 @@ pub(crate) fn handle(
             consensus_state,
             me,
         } => init_contract(deps, env, info, consensus_state, me),
-
         HandleMsg::CheckHeaderAndUpdateState {
             header,
             consensus_state,
@@ -144,7 +137,6 @@ pub(crate) fn handle(
             consensus_state_upgrade_proof,
             last_height_consensus_state,
         ),
-
         HandleMsg::CheckSubstituteAndUpdateState {
             me,
             substitute_client_state,
@@ -158,12 +150,10 @@ pub(crate) fn handle(
             subject_consensus_state,
             initial_height,
         ),
-
         HandleMsg::ZeroCustomFields { me } => zero_custom_fields(deps, env, me),
     }
 }
-
-pub(crate) fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     match msg {
         QueryMsg::VerifyClientState {
             me,
@@ -245,7 +235,6 @@ pub(crate) fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryRespo
             channel,
             consensus_state,
         ),
-
         QueryMsg::VerifyPacketCommitment {
             me,
             height,
@@ -350,14 +339,12 @@ pub(crate) fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryRespo
             next_sequence_recv,
             consensus_state,
         ),
-
         QueryMsg::ProcessedTime { height } => {
             let processed_time = get_processed_time(deps.storage, EMPTY_PREFIX, &height)?;
             to_binary(&ProcessedTimeResponse {
                 time: processed_time,
             })
         }
-
         QueryMsg::Status {
             me,
             consensus_state,
@@ -378,7 +365,6 @@ fn init_contract(
             target_type: String::from("LightConsensusState"),
             msg: format!("{}", e),
         })?;
-
     // Verify initial state
     if let Err(e) = light_consensus_state.verify() {
         return Err(StdError::generic_err(format!(
@@ -386,16 +372,13 @@ fn init_contract(
             e
         )));
     }
-
     // Set metadata for initial consensus state
     set_consensus_meta(&env, deps.storage, EMPTY_PREFIX, &me.latest_height)?;
-
     // Update the state
     let response_data = to_binary(&InitializeStateResult {
         me,
         result: ClientStateCallResponseResult::success(),
     })?;
-
     let response = Response::new()
         .add_attributes(vec![
             ("action", "init_block"),
@@ -416,26 +399,22 @@ fn check_header_and_update_state(
     wasm_header: Header,
 ) -> StdResult<Response> {
     let current_timestamp: u64 = env.block.time.seconds();
-
     // Unmarshal header
     let header: CeloHeader = extract_header(&wasm_header).map_err(|e| StdError::ParseErr {
         target_type: String::from("CeloHeader"),
         msg: format!("{}", e),
     })?;
-
     // Unmarshal state entry
     let light_consensus_state =
         extract_lc_consensus_state(&consensus_state).map_err(|e| StdError::ParseErr {
             target_type: String::from("LightConsensusState"),
             msg: format!("{}", e),
         })?;
-
     // Unmarshal state config
     let light_client_state = extract_lc_client_state(&me).map_err(|e| StdError::ParseErr {
         target_type: String::from("LightClientState"),
         msg: format!("{}", e),
     })?;
-
     // Ingest new header
     let mut state: State = State::new(light_consensus_state, &light_client_state);
     if let Err(e) = state.insert_header(&header, current_timestamp) {
@@ -444,7 +423,6 @@ fn check_header_and_update_state(
             e
         )));
     }
-
     // Update the state
     let new_client_state = me;
     let new_consensus_state = ConsensusState::new(
@@ -453,7 +431,6 @@ fn check_header_and_update_state(
         header.time.as_u64(),
         MerkleRoot::from(header.root),
     );
-
     // set metadata for this consensus state
     set_consensus_meta(&env, deps.storage, EMPTY_PREFIX, &wasm_header.height)?;
 
@@ -475,7 +452,7 @@ fn check_header_and_update_state(
     Ok(response)
 }
 
-pub fn verify_upgrade_and_update_state(
+pub(crate) fn verify_upgrade_and_update_state(
     deps: DepsMut,
     env: Env,
     me: ClientState,
@@ -501,11 +478,13 @@ pub fn verify_upgrade_and_update_state(
         msg: format!("{}", e),
     })?;
 
+    /*
     // Unmarshal proofs
     let proof_client: MerkleProof =
-        from_base64_json_slice(&client_upgrade_proof, "msg.client_proof")?;
+    from_base64_json_slice(&client_upgrade_proof, "msg.client_proof")?;
     let proof_consensus: MerkleProof =
-        from_base64_json_slice(&consensus_state_upgrade_proof, "msg.consensus_proof")?;
+    from_base64_json_slice(&consensus_state_upgrade_proof, "msg.consensus_proof")?;
+    */
 
     // Unmarshal root
     let root: Vec<u8> = from_base64(
@@ -588,7 +567,7 @@ pub fn verify_upgrade_and_update_state(
     )
 }
 
-pub fn check_misbehaviour(
+pub(crate) fn check_misbehaviour(
     _deps: DepsMut,
     _env: Env,
     me: ClientState,
@@ -657,7 +636,11 @@ pub fn check_misbehaviour(
 
 // zero_custom_fields returns a ClientState that is a copy of the current ClientState
 // with all client customizable fields zeroed out
-pub fn zero_custom_fields(_deps: DepsMut, _env: Env, me: ClientState) -> StdResult<Response> {
+pub(crate) fn zero_custom_fields(
+    _deps: DepsMut,
+    _env: Env,
+    me: ClientState,
+) -> StdResult<Response> {
     let mut new_client_state = ClientState::default();
     new_client_state.data = me.data;
 
@@ -670,7 +653,7 @@ pub fn zero_custom_fields(_deps: DepsMut, _env: Env, me: ClientState) -> StdResu
     )
 }
 
-pub fn check_misbehaviour_header(
+pub(crate) fn check_misbehaviour_header(
     num: u16,
     me: &ClientState,
     consensus_state: &ConsensusState,
@@ -707,7 +690,7 @@ pub fn check_misbehaviour_header(
     }
 }
 
-pub fn verify_client_state(
+pub(crate) fn verify_client_state(
     _deps: Deps,
     _env: Env,
     _me: ClientState,
@@ -753,7 +736,7 @@ pub fn verify_client_state(
     })
 }
 
-pub fn verify_client_consensus_state(
+pub(crate) fn verify_client_consensus_state(
     _deps: Deps,
     _env: Env,
     _me: ClientState,
@@ -802,7 +785,7 @@ pub fn verify_client_consensus_state(
     })
 }
 
-pub fn verify_connection_state(
+pub(crate) fn verify_connection_state(
     _deps: Deps,
     _env: Env,
     _me: ClientState,
@@ -847,7 +830,7 @@ pub fn verify_connection_state(
     })
 }
 
-pub fn verify_channel_state(
+pub(crate) fn verify_channel_state(
     _deps: Deps,
     _env: Env,
     _me: ClientState,
@@ -861,41 +844,41 @@ pub fn verify_channel_state(
 ) -> StdResult<QueryResponse> {
     // TODO!
     /*
-        // Unmarshal proof
-        let proof: MerkleProof = from_base64_json_slice(&proof, "msg.proof")?;
-        let specs = vec![ics23::iavl_spec(), ics23::tendermint_spec()];
+    // Unmarshal proof
+    let proof: MerkleProof = from_base64_json_slice(&proof, "msg.proof")?;
+    let specs = vec![ics23::iavl_spec(), ics23::tendermint_spec()];
 
-        // Get root from proving (celo) consensus state
-        let root: Vec<u8> = from_base64(
-        &consensus_state.root.hash,
-        "msg.proving_consensus_state.root",
-        )?;
+    // Get root from proving (celo) consensus state
+    let root: Vec<u8> = from_base64(
+    &consensus_state.root.hash,
+    "msg.proving_consensus_state.root",
+    )?;
 
-        // Build path (proof is used to validate the existance of value under that path)
-        let channel_path = IcsPath::ChannelEnds(
-        PortId::from_str(&port_id).map_err(to_generic_err)?,
-        ChannelId::from_str(&channel_id).map_err(to_generic_err)?,
-        )
-        .to_string();
+    // Build path (proof is used to validate the existance of value under that path)
+    let channel_path = IcsPath::ChannelEnds(
+    PortId::from_str(&port_id).map_err(to_generic_err)?,
+    ChannelId::from_str(&channel_id).map_err(to_generic_err)?,
+    )
+    .to_string();
 
-        // Verify proof against key-value pair
-        let path = apply_prefix(&commitment_prefix, vec![channel_path])?;
-        let value: Vec<u8> = to_vec(&channel)?;
+    // Verify proof against key-value pair
+    let path = apply_prefix(&commitment_prefix, vec![channel_path])?;
+    let value: Vec<u8> = to_vec(&channel)?;
 
-        if !verify_membership(&proof, &specs, &root, &path, value, 0)? {
-        return Err(StdError::generic_err(
-        "proof membership verification failed (invalid proof)",
-        ));
-        }
-
+    if !verify_membership(&proof, &specs, &root, &path, value, 0)? {
+    return Err(StdError::generic_err(
+    "proof membership verification failed (invalid proof)",
+    ));
+    }
     */
+
     // Build up the response
     to_binary(&VerifyChannelStateResult {
         result: ClientStateCallResponseResult::success(),
     })
 }
 
-pub fn verify_packet_commitment(
+pub(crate) fn verify_packet_commitment(
     deps: Deps,
     env: Env,
     _me: ClientState,
@@ -912,49 +895,49 @@ pub fn verify_packet_commitment(
 ) -> StdResult<QueryResponse> {
     // TODO!
     /*
-    // Unmarshal proof
-    let proof: MerkleProof = from_base64_json_slice(&proof, "msg.proof")?;
-    let specs = vec![ics23::iavl_spec(), ics23::tendermint_spec()];
+        // Unmarshal proof
+        let proof: MerkleProof = from_base64_json_slice(&proof, "msg.proof")?;
+        let specs = vec![ics23::iavl_spec(), ics23::tendermint_spec()];
 
-    // Get root from proving (celo) consensus state
-    let root: Vec<u8> = from_base64(&consensus_state.root.hash, "msg.consensus_state.root")?;
+        // Get root from proving (celo) consensus state
+        let root: Vec<u8> = from_base64(&consensus_state.root.hash, "msg.consensus_state.root")?;
 
-    // Check delay period has passed
-    verify_delay_period_passed(
-    deps,
-    height,
-    env.block.height,
-    env.block.time,
-    delay_time_period,
-    delay_block_period,
-    )?;
+        // Check delay period has passed
+        verify_delay_period_passed(
+        deps,
+        height,
+        env.block.height,
+        env.block.time,
+        delay_time_period,
+        delay_block_period,
+        )?;
 
-    // Build path (proof is used to validate the existance of value under that path)
-    let commitment_path = IcsPath::Commitments {
-    port_id: PortId::from_str(&port_id).map_err(to_generic_err)?,
-    channel_id: ChannelId::from_str(&channel_id).map_err(to_generic_err)?,
-    sequence: Sequence::from(sequence),
-    }
-    .to_string();
+        // Build path (proof is used to validate the existance of value under that path)
+        let commitment_path = IcsPath::Commitments {
+        port_id: PortId::from_str(&port_id).map_err(to_generic_err)?,
+        channel_id: ChannelId::from_str(&channel_id).map_err(to_generic_err)?,
+        sequence: Sequence::from(sequence),
+        }
+        .to_string();
 
-    // Verify proof against key-value pair
-    let path = apply_prefix(&commitment_prefix, vec![commitment_path])?;
-    let value: Vec<u8> = from_base64(&commitment_bytes, "msg.commitment_bytes")?;
+        // Verify proof against key-value pair
+        let path = apply_prefix(&commitment_prefix, vec![commitment_path])?;
+        let value: Vec<u8> = from_base64(&commitment_bytes, "msg.commitment_bytes")?;
 
-    if !verify_membership(&proof, &specs, &root, &path, value, 0)? {
-    return Err(StdError::generic_err(
-    "proof membership verification failed (invalid proof)",
-    ));
-    }
+        if !verify_membership(&proof, &specs, &root, &path, value, 0)? {
+        return Err(StdError::generic_err(
+        "proof membership verification failed (invalid proof)",
+        ));
+        }
+
     */
-
     // Build up the response
     to_binary(&VerifyPacketCommitmentResult {
         result: ClientStateCallResponseResult::success(),
     })
 }
 
-pub fn verify_packet_acknowledgment(
+pub(crate) fn verify_packet_acknowledgment(
     deps: Deps,
     env: Env,
     _me: ClientState,
@@ -1013,7 +996,7 @@ pub fn verify_packet_acknowledgment(
     })
 }
 
-pub fn verify_packet_receipt_absence(
+pub(crate) fn verify_packet_receipt_absence(
     deps: Deps,
     env: Env,
     _me: ClientState,
@@ -1075,7 +1058,7 @@ pub fn verify_packet_receipt_absence(
     })
 }
 
-pub fn verify_next_sequence_recv(
+pub(crate) fn verify_next_sequence_recv(
     deps: Deps,
     env: Env,
     _me: ClientState,
@@ -1133,7 +1116,7 @@ pub fn verify_next_sequence_recv(
     })
 }
 
-pub fn check_substitute_client_state(
+pub(crate) fn check_substitute_client_state(
     deps: DepsMut,
     env: Env,
     me: ClientState,
@@ -1143,9 +1126,9 @@ pub fn check_substitute_client_state(
 ) -> StdResult<Response> {
     if substitute_client_state.latest_height != initial_height {
         return Err(StdError::generic_err(format!(
-                    "substitute client revision number must equal initial height revision number ({:?} != {:?})",
-                    me.latest_height, initial_height
-                    )));
+           "substitute client revision number must equal initial height revision number ({:?} != {:?})",
+           me.latest_height, initial_height
+           )));
     }
 
     // unmarshal subject state
@@ -1211,8 +1194,9 @@ pub fn check_substitute_client_state(
     let latest_consensus_state_bytes =
         get_consensus_state(deps.storage, SUBJECT_PREFIX, &me.latest_height)?;
 
-    let latest_consensus_state =
-        PartialConsensusState::decode(latest_consensus_state_bytes.as_slice()).unwrap();
+    let latest_consensus_state = PartialConsensusState::default();
+    //let latest_consensus_state =
+    //PartialConsensusState::decode(latest_consensus_state_bytes.as_slice()).unwrap();
     let latest_light_consensus_state: LightConsensusState =
         rlp::decode(&latest_consensus_state.data).map_err(to_generic_err)?;
 
@@ -1337,59 +1321,59 @@ mod tests {
     use cosmwasm_std::testing::{mock_dependencies, mock_env};
     /*
     use ics23::{
-        calculate_existence_root, Proof, CommitmentProof, ExistenceProof, HashOp, InnerOp, LeafOp,
-        LengthOp,
+    calculate_existence_root, Proof, CommitmentProof, ExistenceProof, HashOp, InnerOp, LeafOp,
+    LengthOp,
     };
     */
 
     /*
-    #[test]
-    fn test_verify_client_consensus_state() {
-        let mut deps = mock_dependencies(&[]);
-        let env = mock_env();
+           #[test]
+           fn test_verify_client_consensus_state() {
+           let mut deps = mock_dependencies(&[]);
+           let env = mock_env();
 
-        let client_state = get_example_client_state(0, 5);
+           let client_state = get_example_client_state(0, 5);
 
-        let height = new_height(0, 5);
-        let consensus_height = new_height(0, 5);
+           let height = new_height(0, 5);
+           let consensus_height = new_height(0, 5);
 
-        let commitment_prefix = MerklePrefix {
-            key_prefix: base64::encode("prefix"),
-        };
-        let counterparty_client_identifier = String::from("07-tendermint-0");
+           let commitment_prefix = MerklePrefix {
+           key_prefix: base64::encode("prefix"),
+           };
+           let counterparty_client_identifier = String::from("07-tendermint-0");
 
-        // The counterparty_consensus_state + commitment_proof comes from the other side of the
-        // bridge, while root "is local" (comes from proving consensus state).
-        //
-        // In the unittest we update provingConsensusState with "remote root", so that validation
-        // always succeeds (as long as verify_membership works properly)
-        let counterparty_consensus_state = CosmosConsensusState {
-            root: MerkleRoot {
-                hash: String::from("base64_encoded_hash"),
-            },
-        };
+    // The counterparty_consensus_state + commitment_proof comes from the other side of the
+    // bridge, while root "is local" (comes from proving consensus state).
+    //
+    // In the unittest we update provingConsensusState with "remote root", so that validation
+    // always succeeds (as long as verify_membership works properly)
+    let counterparty_consensus_state = CosmosConsensusState {
+    root: MerkleRoot {
+    hash: String::from("base64_encoded_hash"),
+    },
+    };
 
-        let (commitment_proof, root) = get_example_proof(
-            b"clients/07-tendermint-0/consensusStates/0-5".to_vec(), // key (based on consensus_height)
-            to_vec(&counterparty_consensus_state).unwrap(),          // value
-        );
+    let (commitment_proof, root) = get_example_proof(
+    b"clients/07-tendermint-0/consensusStates/0-5".to_vec(), // key (based on consensus_height)
+    to_vec(&counterparty_consensus_state).unwrap(),          // value
+    );
 
-        let proving_consensus_state = get_example_consenus_state(root, height);
+    let proving_consensus_state = get_example_consenus_state(root, height);
 
-        let response = verify_client_consensus_state(
-            deps.as_mut(),
-            env,
-            client_state,
-            height,
-            consensus_height,
-            commitment_prefix,
-            counterparty_client_identifier,
-            base64::encode(to_vec(&commitment_proof).unwrap()),
-            counterparty_consensus_state,
-            proving_consensus_state,
-        );
+    let response = verify_client_consensus_state(
+    deps.as_mut(),
+    env,
+    client_state,
+    height,
+    consensus_height,
+    commitment_prefix,
+    counterparty_client_identifier,
+    base64::encode(to_vec(&commitment_proof).unwrap()),
+    counterparty_consensus_state,
+    proving_consensus_state,
+    );
 
-        assert_eq!(response.is_err(), false);
+    assert_eq!(response.is_err(), false);
     }
     */
 
@@ -1411,38 +1395,38 @@ mod tests {
 
     /*
     fn get_example_proof(key: Vec<u8>, value: Vec<u8>) -> (MerkleProof, Vec<u8>) {
-        let leaf = LeafOp {
-            hash: HashOp::Sha256.into(),
-            prehash_key: 0,
-            prehash_value: HashOp::Sha256.into(),
-            length: LengthOp::VarProto.into(),
-            prefix: vec![0_u8],
-        };
+    let leaf = LeafOp {
+    hash: HashOp::Sha256.into(),
+    prehash_key: 0,
+    prehash_value: HashOp::Sha256.into(),
+    length: LengthOp::VarProto.into(),
+    prefix: vec![0_u8],
+    };
 
-        let valid_inner = InnerOp {
-            hash: HashOp::Sha256.into(),
-            prefix: hex::decode("deadbeef00cafe00").unwrap(),
-            suffix: vec![],
-        };
+    let valid_inner = InnerOp {
+    hash: HashOp::Sha256.into(),
+    prefix: hex::decode("deadbeef00cafe00").unwrap(),
+    suffix: vec![],
+    };
 
-        let proof = ExistenceProof {
-            key,
-            value,
-            leaf: Some(leaf.clone()),
-            path: vec![valid_inner.clone()],
-        };
+    let proof = ExistenceProof {
+    key,
+    value,
+    leaf: Some(leaf.clone()),
+    path: vec![valid_inner.clone()],
+    };
 
-        let root = calculate_existence_root(&proof).unwrap();
-        let commitment_proof = CommitmentProof {
-            proof: Some(Proof::Exist(proof)),
-        };
+    let root = calculate_existence_root(&proof).unwrap();
+    let commitment_proof = CommitmentProof {
+    proof: Some(Proof::Exist(proof)),
+    };
 
-        (
-            MerkleProof {
-                proofs: vec![commitment_proof],
-            },
-            root,
-        )
+    (
+    MerkleProof {
+    proofs: vec![commitment_proof],
+    },
+    root,
+    )
     }
     */
 
