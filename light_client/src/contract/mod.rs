@@ -416,7 +416,7 @@ fn check_header_and_update_state(
         msg: format!("{}", e),
     })?;
     // Ingest new header
-    let mut state: State = State::new(light_consensus_state, &light_client_state);
+    let mut state: State<LightClientState> = State::new(light_consensus_state, &light_client_state);
     if let Err(e) = state.insert_header(&header, current_timestamp) {
         return Err(StdError::generic_err(format!(
             "Unable to ingest header. Error: {}",
@@ -458,8 +458,8 @@ pub(crate) fn verify_upgrade_and_update_state(
     me: ClientState,
     new_client_state: ClientState,
     new_consensus_state: ConsensusState,
-    client_upgrade_proof: String,
-    consensus_state_upgrade_proof: String,
+    _client_upgrade_proof: String,
+    _consensus_state_upgrade_proof: String,
     last_height_consensus_state: ConsensusState,
 ) -> StdResult<Response> {
     //let specs = vec![ics23::iavl_spec(), ics23::tendermint_spec()];
@@ -487,7 +487,7 @@ pub(crate) fn verify_upgrade_and_update_state(
     */
 
     // Unmarshal root
-    let root: Vec<u8> = from_base64(
+    let _root: Vec<u8> = from_base64(
         &last_height_consensus_state.root.hash,
         "msg.last_height_consensus_state.root",
     )?;
@@ -641,8 +641,7 @@ pub(crate) fn zero_custom_fields(
     _env: Env,
     me: ClientState,
 ) -> StdResult<Response> {
-    let mut new_client_state = ClientState::default();
-    new_client_state.data = me.data;
+    let new_client_state = ClientState{data: me.data, ..Default::default()};
 
     // Build up the response
     wrap_response(
@@ -661,24 +660,24 @@ pub(crate) fn check_misbehaviour_header(
 ) -> Result<(), StdError> {
     // Unmarshal state entry
     let light_consensus_state =
-        extract_lc_consensus_state(&consensus_state).map_err(|e| StdError::ParseErr {
+        extract_lc_consensus_state(consensus_state).map_err(|e| StdError::ParseErr {
             target_type: String::from("LightConsensusState"),
             msg: format!("{}", e),
         })?;
 
     // Unmarshal state config
-    let light_client_state = extract_lc_client_state(&me).map_err(|e| StdError::ParseErr {
+    let light_client_state = extract_lc_client_state(me).map_err(|e| StdError::ParseErr {
         target_type: String::from("LightClientState"),
         msg: format!("{}", e),
     })?;
     // Unmarshal header
-    let celo_header: CeloHeader = extract_header(&header).map_err(|e| StdError::ParseErr {
+    let celo_header: CeloHeader = extract_header(header).map_err(|e| StdError::ParseErr {
         target_type: String::from("CeloHeader"),
         msg: format!("{}", e),
     })?;
 
     // Verify header
-    let state: State = State::new(light_consensus_state, &light_client_state);
+    let state: State<LightClientState> = State::new(light_consensus_state, &light_client_state);
     match state.verify_header_seal(&celo_header) {
         Err(e) => {
             return Err(StdError::generic_err(format!(
@@ -686,7 +685,7 @@ pub(crate) fn check_misbehaviour_header(
                 num, e
             )))
         }
-        _ => return Ok(()),
+        _ => Ok(()),
     }
 }
 
@@ -695,11 +694,11 @@ pub(crate) fn verify_client_state(
     _env: Env,
     _me: ClientState,
     _height: Height,
-    commitment_prefix: MerklePrefix,
-    counterparty_client_identifier: String,
-    proof: String,
-    counterparty_client_state: CosmosClientState,
-    proving_consensus_state: ConsensusState,
+    _commitment_prefix: MerklePrefix,
+    _counterparty_client_identifier: String,
+    _proof: String,
+    _counterparty_client_state: CosmosClientState,
+    _proving_consensus_state: ConsensusState,
 ) -> StdResult<QueryResponse> {
     // TODO!!!
     /*
@@ -741,12 +740,12 @@ pub(crate) fn verify_client_consensus_state(
     _env: Env,
     _me: ClientState,
     _height: Height,
-    consensus_height: Height,
-    commitment_prefix: MerklePrefix,
-    counterparty_client_identifier: String,
-    proof: String,
-    counterparty_consensus_state: CosmosConsensusState,
-    proving_consensus_state: ConsensusState,
+    _consensus_height: Height,
+    _commitment_prefix: MerklePrefix,
+    _counterparty_client_identifier: String,
+    _proof: String,
+    _counterparty_consensus_state: CosmosConsensusState,
+    _proving_consensus_state: ConsensusState,
 ) -> StdResult<QueryResponse> {
     // TODO!!
     /*
@@ -790,11 +789,11 @@ pub(crate) fn verify_connection_state(
     _env: Env,
     _me: ClientState,
     _height: Height,
-    commitment_prefix: MerklePrefix,
-    proof: String,
-    connection_id: String,
-    connection_end: ConnectionEnd,
-    consensus_state: ConsensusState,
+    _commitment_prefix: MerklePrefix,
+    _proof: String,
+    _connection_id: String,
+    _connection_end: ConnectionEnd,
+    _consensus_state: ConsensusState,
 ) -> StdResult<QueryResponse> {
     // TODO!
     /*
@@ -835,12 +834,12 @@ pub(crate) fn verify_channel_state(
     _env: Env,
     _me: ClientState,
     _height: Height,
-    commitment_prefix: MerklePrefix,
-    proof: String,
-    port_id: String,
-    channel_id: String,
-    channel: Channel,
-    consensus_state: ConsensusState,
+    _commitment_prefix: MerklePrefix,
+    _proof: String,
+    _port_id: String,
+    _channel_id: String,
+    _channel: Channel,
+    _consensus_state: ConsensusState,
 ) -> StdResult<QueryResponse> {
     // TODO!
     /*
@@ -879,19 +878,19 @@ pub(crate) fn verify_channel_state(
 }
 
 pub(crate) fn verify_packet_commitment(
-    deps: Deps,
-    env: Env,
+    _deps: Deps,
+    _env: Env,
     _me: ClientState,
-    height: Height,
-    commitment_prefix: MerklePrefix,
-    proof: String,
-    port_id: String,
-    channel_id: String,
-    delay_time_period: u64,
-    delay_block_period: u64,
-    sequence: u64,
-    commitment_bytes: String,
-    consensus_state: ConsensusState,
+    _height: Height,
+    _commitment_prefix: MerklePrefix,
+    _proof: String,
+    _port_id: String,
+    _channel_id: String,
+    _delay_time_period: u64,
+    _delay_block_period: u64,
+    _sequence: u64,
+    _commitment_bytes: String,
+    _consensus_state: ConsensusState,
 ) -> StdResult<QueryResponse> {
     // TODO!
     /*
@@ -938,19 +937,19 @@ pub(crate) fn verify_packet_commitment(
 }
 
 pub(crate) fn verify_packet_acknowledgment(
-    deps: Deps,
-    env: Env,
+    _deps: Deps,
+    _env: Env,
     _me: ClientState,
-    height: Height,
-    commitment_prefix: MerklePrefix,
-    proof: String,
-    port_id: String,
-    channel_id: String,
-    delay_time_period: u64,
-    delay_block_period: u64,
-    sequence: u64,
-    acknowledgement: String,
-    consensus_state: ConsensusState,
+    _height: Height,
+    _commitment_prefix: MerklePrefix,
+    _proof: String,
+    _port_id: String,
+    _channel_id: String,
+    _delay_time_period: u64,
+    _delay_block_period: u64,
+    _sequence: u64,
+    _acknowledgement: String,
+    _consensus_state: ConsensusState,
 ) -> StdResult<QueryResponse> {
     // TODO!!
     /*
@@ -997,18 +996,18 @@ pub(crate) fn verify_packet_acknowledgment(
 }
 
 pub(crate) fn verify_packet_receipt_absence(
-    deps: Deps,
-    env: Env,
+    _deps: Deps,
+    _env: Env,
     _me: ClientState,
-    height: Height,
-    commitment_prefix: MerklePrefix,
-    proof: String,
-    port_id: String,
-    channel_id: String,
-    delay_time_period: u64,
-    delay_block_period: u64,
-    sequence: u64,
-    consensus_state: ConsensusState,
+    _height: Height,
+    _commitment_prefix: MerklePrefix,
+    _proof: String,
+    _port_id: String,
+    _channel_id: String,
+    _delay_time_period: u64,
+    _delay_block_period: u64,
+    _sequence: u64,
+    _consensus_state: ConsensusState,
 ) -> StdResult<QueryResponse> {
     // TODO !
     /*
@@ -1059,18 +1058,18 @@ pub(crate) fn verify_packet_receipt_absence(
 }
 
 pub(crate) fn verify_next_sequence_recv(
-    deps: Deps,
-    env: Env,
+    _deps: Deps,
+    _env: Env,
     _me: ClientState,
-    height: Height,
-    commitment_prefix: MerklePrefix,
-    proof: String,
-    port_id: String,
-    channel_id: String,
-    delay_time_period: u64,
-    delay_block_period: u64,
-    next_sequence_recv: u64,
-    consensus_state: ConsensusState,
+    _height: Height,
+    _commitment_prefix: MerklePrefix,
+    _proof: String,
+    _port_id: String,
+    _channel_id: String,
+    _delay_time_period: u64,
+    _delay_block_period: u64,
+    _next_sequence_recv: u64,
+    _consensus_state: ConsensusState,
 ) -> StdResult<QueryResponse> {
     // TODO!
     /*
@@ -1191,7 +1190,7 @@ pub(crate) fn check_substitute_client_state(
 
     new_client_state.latest_height = substitute_client_state.latest_height;
 
-    let latest_consensus_state_bytes =
+    let _latest_consensus_state_bytes =
         get_consensus_state(deps.storage, SUBJECT_PREFIX, &me.latest_height)?;
 
     let latest_consensus_state = PartialConsensusState::default();

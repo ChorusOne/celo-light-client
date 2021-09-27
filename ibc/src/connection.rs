@@ -1,5 +1,4 @@
-use crate::{Error, Kind, MerklePrefix};
-use std::convert::{From, TryFrom};
+use crate::MerklePrefix;
 
 // Origin: ibc.core.connection.v1 (compiled proto)
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]

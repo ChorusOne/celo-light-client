@@ -1,5 +1,3 @@
-use crate::{Error, Kind};
-use std::convert::TryFrom;
 
 // Origin: ibc.core.channel.v1 (compiled proto)
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]

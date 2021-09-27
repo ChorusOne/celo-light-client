@@ -1,4 +1,4 @@
-use crate::contract::types::wasm::{CosmosClientState, CosmosConsensusState, Status};
+use crate::contract::wasm::{CosmosClientState, CosmosConsensusState, Status};
 use celo_ibc::{
     Channel, ClientState, ConnectionEnd, ConsensusState, Header, Height, MerklePrefix, Misbehaviour,
 };

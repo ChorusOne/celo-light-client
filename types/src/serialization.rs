@@ -9,8 +9,8 @@ pub(crate) mod hexstring {
         T: hex::FromHex,
         <T as FromHex>::Error: std::fmt::Display,
     {
-        let s: &str = Deserialize::deserialize(deserializer)?;
-        let stripped = s.strip_prefix("0x").unwrap_or(s);
+        let s: String = Deserialize::deserialize(deserializer)?;
+        let stripped = s.strip_prefix("0x").unwrap_or(&s);
         T::from_hex(stripped).map_err(D::Error::custom)
     }
 

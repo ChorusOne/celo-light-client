@@ -1,7 +1,5 @@
-use crate::{Error, Kind, Height, ProofSpec, MerkleRoot};
+use crate::{Error, Height, Kind, MerkleRoot, ProofSpec};
 use celo_types::{client::LightClientState, consensus::LightConsensusState};
-use std::convert::{From, TryFrom};
-
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct ConsensusState {
@@ -50,15 +48,36 @@ pub fn extract_code_id_from_consensus(cs: &ConsensusState) -> Result<Vec<u8>, Er
     })
 }
 
-#[derive(
-    Default, Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
-)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct ClientState {
     pub data: String,
     pub code_id: String,
     pub latest_height: Height,
     pub proof_specs: Vec<ProofSpec>,
     pub frozen_height: Option<Height>,
+}
+impl ClientState {
+    pub fn new(
+        lc: &LightClientState,
+        code_id: String,
+        latest_height: Height,
+        proof_specs: Vec<ProofSpec>,
+    ) -> Self {
+        let r = rlp::encode(lc);
+        Self {
+            data: base64::encode(r),
+            code_id,
+            latest_height,
+            proof_specs,
+            frozen_height: None,
+        }
+    }
+}
+impl Default for ClientState {
+    fn default() -> Self {
+        let lc = LightClientState::default();
+        ClientState::new(&lc, String::default(), Height::default(), Vec::default())
+    }
 }
 
 pub fn extract_lc_client_state(cs: &ClientState) -> Result<LightClientState, Error> {

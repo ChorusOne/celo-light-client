@@ -16,7 +16,7 @@ rlp-derive = {version = "0.1"} # RlpEncodable and RlpDecodable have issues with 
 hex = { version = "0.4", features = ["serde"]}
 impl-rlp = {version = "0.3"}
 impl-serde = {version = "0.3"}
-fixed-hash = {version = "0.6", default-features = false}
+fixed-hash = {version = "0.7", default-features = false}
 anomaly = { version = "0.2", default-features = false }
 thiserror = { version = "1.0", default-features = false }
 sha3 = { version = "0.9", default-features = false }

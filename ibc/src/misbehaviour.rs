@@ -1,6 +1,4 @@
-
-use crate::{Header, Error, Kind};
-use std::convert::{From, TryFrom, TryInto};
+use crate::Header;
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct Misbehaviour {
@@ -8,4 +6,3 @@ pub struct Misbehaviour {
     pub header_1: Header,
     pub header_2: Header,
 }
-

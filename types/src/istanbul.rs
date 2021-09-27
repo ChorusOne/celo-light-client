@@ -3,7 +3,7 @@ use fixed_hash::construct_fixed_hash;
 use impl_rlp::impl_fixed_hash_rlp;
 use impl_serde::impl_fixed_hash_serde;
 use rlp::DecoderError;
-use rlp_derive::{RlpEncodable, RlpDecodable};
+use rlp_derive::{RlpDecodable, RlpEncodable};
 
 use crate::errors::{Error, Kind};
 
@@ -111,6 +111,14 @@ impl rlp::Encodable for IstanbulExtra {
 pub struct ValidatorData {
     pub address: Address,
     pub public_key: SerializedPublicKey,
+}
+impl From<(Address, SerializedPublicKey)> for ValidatorData {
+    fn from((address, public_key): (Address, SerializedPublicKey)) -> Self {
+        Self {
+            address,
+            public_key,
+        }
+    }
 }
 
 #[cfg(test)]

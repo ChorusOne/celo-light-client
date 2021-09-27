@@ -31,9 +31,6 @@ name = "anomaly"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "550632e31568ae1a5f47998c3aa48563030fc49b9ec91913ca337cf64fbc5ccb"
-dependencies = [
- "backtrace",
-]
 
 [[package]]
 name = "ansi_term"
@@ -204,6 +201,7 @@ dependencies = [
  "rlp",
  "schemars",
  "serde",
+ "serde_json",
  "thiserror",
 ]
 
@@ -226,7 +224,7 @@ version = "0.1.0"
 dependencies = [
  "anomaly",
  "ethereum-types",
- "fixed-hash 0.6.1",
+ "fixed-hash",
  "hex",
  "impl-rlp",
  "impl-serde",
@@ -753,7 +751,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "779864b9c7f7ead1f092972c3257496c6a84b46dba2ce131dd8a282cb2cc5972"
 dependencies = [
  "crunchy",
- "fixed-hash 0.7.0",
+ "fixed-hash",
  "impl-rlp",
  "impl-serde",
  "tiny-keccak",
@@ -766,11 +764,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f64b5df66a228d85e4b17e5d6c6aa43b0310898ffe8a85988c4c032357aaabfd"
 dependencies = [
  "ethbloom",
- "fixed-hash 0.7.0",
+ "fixed-hash",
  "impl-rlp",
  "impl-serde",
  "primitive-types",
  "uint",
+]
+
+[[package]]
+name = "eyre"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "221239d1d5ea86bf5d6f91c9d6bc3646ffe471b08ff9b0f91c44f115ac969d2b"
+dependencies = [
+ "indenter",
+ "once_cell",
 ]
 
 [[package]]
@@ -791,15 +799,6 @@ dependencies = [
 
 [[package]]
 name = "fixed-hash"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11498d382790b7a8f2fd211780bec78619bba81cdad3a283997c0c41f836759c"
-dependencies = [
- "static_assertions",
-]
-
-[[package]]
-name = "fixed-hash"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cfcf0ed7fe52a17a03854ec54a9f76d6d84508d1c0e66bc1793301c73fc8493c"
@@ -808,6 +807,16 @@ dependencies = [
  "rand 0.8.4",
  "rustc-hex",
  "static_assertions",
+]
+
+[[package]]
+name = "flex-error"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d8754b6f51ccfe4ff91bd54f34f3b46a3027007e29d7f42d56ef814f96010dd9"
+dependencies = [
+ "eyre",
+ "paste",
 ]
 
 [[package]]
@@ -1170,7 +1179,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.9.1"
+version = "0.11.0"
 dependencies = [
  "bytes",
  "prost",
@@ -1234,6 +1243,12 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "indenter"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce23b50ad8242c51a442f3ff322d56b02f08852c77e4c0b4d3fd684abc89c683"
 
 [[package]]
 name = "indexmap"
@@ -1658,6 +1673,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "paste"
+version = "1.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "acbf547ad0c65e31259204bd90935776d1c693cec2f4ff7abb7a1bbbd40dfe58"
+
+[[package]]
 name = "percent-encoding"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1732,7 +1753,7 @@ version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06345ee39fbccfb06ab45f3a1a5798d9dafa04cb8921a76d227040003a234b0e"
 dependencies = [
- "fixed-hash 0.7.0",
+ "fixed-hash",
  "impl-codec",
  "impl-rlp",
  "impl-serde",
@@ -2587,11 +2608,12 @@ dependencies = [
 
 [[package]]
 name = "tendermint-proto"
-version = "0.21.0"
+version = "0.22.0"
+source = "git+https://github.com/ChorusOne/tendermint-rs?branch=giulio/prost_0_8#142f1e1d9b0e9c37a32ed60c213a4d62b1735883"
 dependencies = [
- "anomaly",
  "bytes",
  "chrono",
+ "flex-error",
  "num-derive",
  "num-traits",
  "prost",
@@ -2599,7 +2621,6 @@ dependencies = [
  "serde",
  "serde_bytes",
  "subtle-encoding",
- "thiserror",
 ]
 
 [[package]]

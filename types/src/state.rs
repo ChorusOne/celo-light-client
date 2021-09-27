@@ -7,13 +7,13 @@ use ethereum_types::{Address, U128};
 use std::collections::HashMap;
 
 /// State takes care of managing the IBFT consensus state
-pub struct State<'a> {
+pub struct State<'a, Cfg> {
     snapshot: LightConsensusState,
-    config: &'a dyn StateConfig,
+    config: &'a Cfg,
 }
 
-impl<'a> State<'a> {
-    pub fn new(snapshot: LightConsensusState, config: &'a dyn StateConfig) -> Self {
+impl<'a, Cfg> State<'a, Cfg> {
+    pub fn new(snapshot: LightConsensusState, config: &'a Cfg) -> Self {
         State { snapshot, config }
     }
 
@@ -63,7 +63,10 @@ impl<'a> State<'a> {
         true
     }
 
-    pub fn verify_header(&self, header: &Header, current_timestamp: u64) -> Result<(), Error> {
+    pub fn verify_header(&self, header: &Header, current_timestamp: u64) -> Result<(), Error>
+    where
+        Cfg: StateConfig,
+    {
         // assert header height is newer than any we know
         if header.number.as_u64() <= self.snapshot.number {
             return Err(Kind::HeaderVerificationError {
@@ -107,9 +110,11 @@ impl<'a> State<'a> {
         Ok(())
     }
 
-    pub fn insert_header(&mut self, header: &Header, current_timestamp: u64) -> Result<(), Error> {
+    pub fn insert_header(&mut self, header: &Header, current_timestamp: u64) -> Result<(), Error>
+    where
+        Cfg: StateConfig,
+    {
         let block_num = header.number.as_u64();
-
         if is_last_block_of_epoch(block_num, self.config.epoch_size()) {
             // The validator set is about to be updated with epoch header
             self.store_epoch_header(header, current_timestamp)
@@ -123,7 +128,10 @@ impl<'a> State<'a> {
         &mut self,
         header: &Header,
         current_timestamp: u64,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error>
+    where
+        Cfg: StateConfig,
+    {
         // genesis block is valid dead end
         if self.config.verify_non_epoch_headers() && !header.number.is_zero() {
             self.verify_header(header, current_timestamp)?
@@ -144,7 +152,10 @@ impl<'a> State<'a> {
         self.update_state_snapshot(snapshot)
     }
 
-    fn store_epoch_header(&mut self, header: &Header, current_timestamp: u64) -> Result<(), Error> {
+    fn store_epoch_header(&mut self, header: &Header, current_timestamp: u64) -> Result<(), Error>
+    where
+        Cfg: StateConfig,
+    {
         // genesis block is valid dead end
         if self.config.verify_epoch_headers() && !header.number.is_zero() {
             self.verify_header(header, current_timestamp)?
@@ -268,10 +279,7 @@ mod tests {
             }
 
             if !self.accounts.contains_key(&account) {
-                self.accounts.insert(
-                    account.clone(),
-                    generate_key()
-                );
+                self.accounts.insert(account.clone(), generate_key());
             }
 
             pubkey_to_address(self.accounts.get(&account).unwrap().1)
