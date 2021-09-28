@@ -4,6 +4,7 @@ use impl_rlp::impl_fixed_hash_rlp;
 use impl_serde::impl_fixed_hash_serde;
 use rlp::DecoderError;
 use rlp_derive::{RlpDecodable, RlpEncodable};
+use serde::{Deserialize, Serialize};
 
 use crate::errors::{Error, Kind};
 
@@ -107,7 +108,7 @@ impl rlp::Encodable for IstanbulExtra {
 }
 
 ///https://pkg.go.dev/github.com/celo-org/celo-blockchain/consensus/istanbul#ValidatorData
-#[derive(Clone, PartialEq, Debug, RlpEncodable, RlpDecodable)]
+#[derive(Clone, PartialEq, Debug, RlpEncodable, RlpDecodable, Serialize, Deserialize)]
 pub struct ValidatorData {
     pub address: Address,
     pub public_key: SerializedPublicKey,
