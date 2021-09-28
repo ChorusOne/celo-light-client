@@ -76,14 +76,6 @@ impl<'a, Cfg> State<'a, Cfg> {
         }
 
         if self.config.verify_header_timestamp() {
-            // assert header timestamp is past current timestamp
-            if header.time.as_u64() <= self.snapshot.timestamp {
-                return Err(Kind::HeaderVerificationError {
-                    msg: "header timestamp should be greater than the last one stored in state",
-                }
-                .into());
-            }
-
             // don't waste time checking blocks from the future
             if header.time.as_u64() > current_timestamp + self.config.allowed_clock_skew() {
                 return Err(Kind::HeaderVerificationError {
@@ -144,9 +136,7 @@ impl<'a, Cfg> State<'a, Cfg> {
 
             // Update the header related fields
             number: header.number.as_u64(),
-            timestamp: header.time.as_u64(),
             hash: hash_header(header),
-            aggregated_seal: extra.aggregated_seal,
         };
 
         self.update_state_snapshot(snapshot)
@@ -199,10 +189,8 @@ impl<'a, Cfg> State<'a, Cfg> {
 
         let snapshot = LightConsensusState {
             number: header.number.as_u64(),
-            timestamp: header.time.as_u64(),
             validators: self.snapshot.validators.clone(),
             hash: header_hash,
-            aggregated_seal: extra.aggregated_seal,
         };
 
         self.update_state_snapshot(snapshot)

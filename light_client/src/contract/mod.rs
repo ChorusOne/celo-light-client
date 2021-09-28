@@ -1199,14 +1199,6 @@ pub(crate) fn check_substitute_client_state(
     let latest_light_consensus_state: LightConsensusState =
         rlp::decode(&latest_consensus_state.data).map_err(to_generic_err)?;
 
-    if is_expired(
-        current_timestamp,
-        latest_light_consensus_state.timestamp,
-        &light_subject_client_state,
-    ) {
-        return Err(StdError::generic_err("updated subject client is expired"));
-    }
-
     wrap_response(
         &CheckSubstituteAndUpdateStateResult {
             result: ClientStateCallResponseResult::success(),
@@ -1240,14 +1232,6 @@ fn status(
                 target_type: String::from("LightConsensusState"),
                 msg: format!("{}", e),
             })?;
-
-        if is_expired(
-            current_timestamp,
-            light_consensus_state.timestamp,
-            &light_client_state,
-        ) {
-            status = Status::Exipred;
-        }
     }
 
     // Build up the response
