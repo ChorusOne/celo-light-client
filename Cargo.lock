@@ -3219,7 +3219,6 @@ dependencies = [
 [[package]]
 name = "web3"
 version = "0.17.0"
-source = "git+https://github.com/ChorusOne/rust-web3?branch=celo#3ee5041da80ee88d1766b7045cfaf2c368d33442"
 dependencies = [
  "arrayvec 0.5.2",
  "base64",

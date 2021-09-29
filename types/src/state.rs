@@ -129,7 +129,7 @@ impl<'a, Cfg> State<'a, Cfg> {
             self.verify_header(header, current_timestamp)?
         }
 
-        let extra = extract_istanbul_extra(header)?;
+        let _extra = extract_istanbul_extra(header)?;
         let snapshot = LightConsensusState {
             // The validator state stays unchanged (ONLY updated with epoch header)
             validators: self.snapshot.validators.clone(),

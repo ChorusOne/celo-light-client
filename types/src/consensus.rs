@@ -1,8 +1,8 @@
 use crate::errors::Error;
-use serde::{Deserialize, Serialize};
-use crate::istanbul::{IstanbulAggregatedSeal, ValidatorData};
+use crate::istanbul::ValidatorData;
 use ethereum_types::H256;
 use rlp_derive::{RlpDecodable, RlpEncodable};
+use serde::{Deserialize, Serialize};
 
 /// LightConsensusState represents an IBFT consensus state at specified block height
 #[derive(Serialize, Deserialize, RlpDecodable, RlpEncodable, Clone, PartialEq, Debug, Default)]
@@ -20,5 +20,16 @@ impl LightConsensusState {
     pub fn verify(&self) -> Result<(), Error> {
         //TODO!!!
         Ok(())
+    }
+}
+
+#[cfg(feature = "web3_support")]
+impl From<web3::types::Snapshot<ValidatorData>> for LightConsensusState {
+    fn from(snap: web3::types::Snapshot<ValidatorData>) -> Self {
+        Self {
+            number: snap.number,
+            validators: snap.validators,
+            hash: snap.hash,
+        }
     }
 }

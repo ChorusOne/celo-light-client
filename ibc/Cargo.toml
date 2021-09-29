@@ -15,9 +15,8 @@ schemars = { version = "0.8"}
 anomaly = { version = "0.2", default-features = false }
 thiserror = { version = "1.0", default-features = false }
 
-#ibc-proto = {git = "https://github.com/ChorusOne/ibc-rs", default-features = false, branch = "giulio/celochain"}
+#ibc-proto = {git = "https://github.com/ChorusOne/ibc-rs", branch = "giulio/realcelochain", default-features = false, optional = true}
 ibc-proto = {path = "/home/giulio/src/github.com/ChorusOne/ibc-rs/proto", default-features = false, optional = true}
 
 [features]
-#default = ["conversions"]
 conversions = ["ibc-proto"]

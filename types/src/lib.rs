@@ -6,7 +6,7 @@ pub mod state;
 pub mod client;
 pub mod consensus;
 
-use errors::{Error, Kind};
+pub use errors::{Error, Kind};
 pub use header::Header;
 use istanbul::*;
 
