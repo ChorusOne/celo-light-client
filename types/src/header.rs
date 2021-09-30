@@ -1,28 +1,31 @@
 use crate::{Error, Kind};
 use ethereum_types::*;
-use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
 /// https://pkg.go.dev/github.com/celo-org/celo-blockchain/core/types#Header
-#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, PartialEq, Debug)]
+#[cfg_attr(
+    any(test, feature = "serialize"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
+#[cfg_attr(any(test, feature = "serialize"), serde(rename_all = "camelCase"))]
 pub struct Header {
     pub parent_hash: H256,
-    #[serde(rename = "miner")]
+    #[cfg_attr(any(test, feature = "serialize"), serde(rename = "miner"))]
     pub coinbase: Address,
-    #[serde(rename = "stateRoot")]
+    #[cfg_attr(any(test, feature = "serialize"), serde(rename = "stateRoot"))]
     pub root: H256,
-    #[serde(rename = "transactionsRoot")]
+    #[cfg_attr(any(test, feature = "serialize"), serde(rename = "transactionsRoot"))]
     pub tx_hash: H256,
-    #[serde(rename = "receiptsRoot")]
+    #[cfg_attr(any(test, feature = "serialize"), serde(rename = "receiptsRoot"))]
     pub receipt_hash: H256,
-    #[serde(rename = "logsBloom")]
+    #[cfg_attr(any(test, feature = "serialize"), serde(rename = "logsBloom"))]
     pub bloom: Bloom,
     pub number: U64,
     pub gas_used: U256,
-    #[serde(rename = "timestamp")]
+    #[cfg_attr(any(test, feature = "serialize"), serde(rename= "timestamp"))]
     pub time: U256,
-    #[serde(rename = "extraData", with = "crate::serialization::hexstring")]
+    #[cfg_attr(any(test, feature = "serialize"), serde(rename = "extraData", with = "crate::serialization::hexstring"))]
     pub extra: Vec<u8>,
 }
 

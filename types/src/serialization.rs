@@ -1,3 +1,4 @@
+#![cfg(any(test, feature = "serialize"))]
 pub(crate) mod hexstring {
     use hex::FromHex;
     use serde::{de::Error, Deserialize, Deserializer, Serializer};

@@ -1,10 +1,8 @@
 use ethereum_types::*;
 use fixed_hash::construct_fixed_hash;
 use impl_rlp::impl_fixed_hash_rlp;
-use impl_serde::impl_fixed_hash_serde;
 use rlp::DecoderError;
 use rlp_derive::{RlpDecodable, RlpEncodable};
-use serde::{Deserialize, Serialize};
 
 use crate::errors::{Error, Kind};
 
@@ -14,7 +12,8 @@ construct_fixed_hash! {
     pub struct SerializedPublicKey(96);
 }
 impl_fixed_hash_rlp!(SerializedPublicKey, 96);
-impl_fixed_hash_serde!(SerializedPublicKey, 96);
+#[cfg(any(test, feature = "serialize"))]
+impl_serde::impl_fixed_hash_serde!(SerializedPublicKey, 96);
 
 ///https://pkg.go.dev/github.com/celo-org/celo-blockchain/core/types#IstanbulAggregatedSeal
 #[derive(Clone, PartialEq, Debug, Default)]
@@ -108,9 +107,12 @@ impl rlp::Encodable for IstanbulExtra {
 }
 
 ///https://pkg.go.dev/github.com/celo-org/celo-blockchain/consensus/istanbul#ValidatorData
-#[derive(Clone, PartialEq, Debug, RlpEncodable, RlpDecodable, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Debug, RlpEncodable, RlpDecodable)]
+#[cfg_attr(any(test, feature = "serialize"), derive(serde::Serialize, serde::Deserialize))]
 pub struct ValidatorData {
+#[cfg_attr(any(test, feature = "serialize"), serde(rename = "Address"))]
     pub address: Address,
+#[cfg_attr(any(test, feature = "serialize"), serde(rename = "BLSPublicKey"))]
     pub public_key: SerializedPublicKey,
 }
 impl From<(Address, SerializedPublicKey)> for ValidatorData {

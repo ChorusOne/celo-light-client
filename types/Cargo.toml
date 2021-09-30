@@ -7,8 +7,8 @@ authors = ["Kaczanowski Mateusz <mateusz@chorus.one>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = { version = "1", features = ["derive"]}
-ethereum-types = {version = "0.11", default-features = false, features = ["rlp", "serialize"]}
+serde = { version = "1", features = ["derive"], optional = true}
+ethereum-types = {version = "0.11", default-features = false, features = ["rlp"]}
 web3 = {git = "https://github.com/ChorusOne/rust-web3", branch = "celo", features = ["celo"], optional = true}
 #web3 = {path = "/home/giulio/src/github.com/ChorusOne/rust-web3", features = ["celo"], optional = true}
 rlp = {version = "0.5"}
@@ -28,3 +28,4 @@ rand = { version = "0.6"}
 
 [features]
 web3_support = ["web3"]
+serialize = ["serde", "ethereum-types/serialize"]

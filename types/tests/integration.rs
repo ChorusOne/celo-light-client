@@ -1,3 +1,4 @@
+#![cfg(test)]
 use celo_types::{client::*, consensus::*, istanbul::*, state::*, *};
 
 use std::{fs::File, io::BufReader};
@@ -12,7 +13,6 @@ pub fn get_genesis() -> LightConsensusState {
 
     LightConsensusState {
         number: genesis_header.number.as_u64(),
-        timestamp: genesis_header.time.as_u64(),
         validators: ista_extra
             .added_validators
             .into_iter()
@@ -20,7 +20,6 @@ pub fn get_genesis() -> LightConsensusState {
             .map(ValidatorData::from)
             .collect(),
         hash: genesis_header.root,
-        aggregated_seal: ista_extra.aggregated_seal,
     }
 }
 
@@ -55,6 +54,9 @@ fn run_baklava() {
     let mut state = State::new(lcons, &cfg);
     for head in heads {
         let res = state.insert_header(&head, head.time.as_u64());
-        assert!(res.is_ok(), format!("failed at header {}", head.number.as_u64()))
+        assert!(
+            res.is_ok(),
+            format!("failed at header {}", head.number.as_u64())
+        )
     }
 }

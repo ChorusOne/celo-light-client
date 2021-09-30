@@ -1,5 +1,4 @@
 use rlp_derive::{RlpDecodable, RlpEncodable};
-use serde::{Deserialize, Serialize};
 
 #[derive(RlpDecodable, RlpEncodable, Clone, PartialEq, Debug, Default)]
 pub struct LightClientState {
@@ -17,7 +16,8 @@ pub struct LightClientState {
 }
 
 /// Config contains state related configuration flags
-#[derive(Serialize, Deserialize, RlpEncodable, RlpDecodable, Clone, PartialEq, Eq, Debug)]
+#[derive(RlpEncodable, RlpDecodable, Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(any(test, feature = "serialize"), derive(serde::Serialize, serde::Deserialize))]
 pub struct Config {
     pub epoch_size: u64,
     pub allowed_clock_skew: u64,

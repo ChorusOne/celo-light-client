@@ -287,10 +287,8 @@ mod tests {
                     public_key: SerializedPublicKey::default(),
                 },
             ],
-            timestamp: 123456,
             number: 456,
             hash: H256::default(),
-            aggregated_seal: IstanbulAggregatedSeal::default(),
         };
 
         let encoded = rlp::encode(&snapshot);

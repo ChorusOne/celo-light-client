@@ -153,6 +153,7 @@ pub fn execute(
         HandleMsg::ZeroCustomFields { me } => zero_custom_fields(deps, env, me),
     }
 }
+
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     match msg {
         QueryMsg::VerifyClientState {
@@ -1208,7 +1209,7 @@ pub(crate) fn check_substitute_client_state(
     )
 }
 
-fn status(
+pub(crate) fn status(
     _deps: Deps,
     env: Env,
     me: ClientState,
