@@ -35,7 +35,9 @@ impl TryFrom<MerkleRoot> for H256 {
 pub struct ProofSpec {
     pub leaf_spec: Option<LeafOp>,
     pub inner_spec: Option<InnerSpec>,
+    #[serde(default)]
     pub max_depth: i32,
+    #[serde(default)]
     pub min_depth: i32,
 }
 
@@ -45,6 +47,7 @@ pub struct InnerSpec {
     pub child_size: i32,
     pub min_prefix_length: i32,
     pub max_prefix_length: i32,
+    #[serde(default)]
     pub empty_child: String, // ::prost::alloc::vec::Vec<u8>,
     pub hash: i32,
 }
@@ -52,6 +55,7 @@ pub struct InnerSpec {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct LeafOp {
     pub hash: i32,
+    #[serde(default)]
     pub prehash_key: i32,
     pub prehash_value: i32,
     pub length: i32,
