@@ -6,7 +6,7 @@ edition = "2018"
 
 
 [dependencies]
-celo-types = {path = "../types", features = ["web3_support"]}
+celo-types = {path = "../types", features = ["web3-support"]}
 celo-ibc = {path = "../ibc"}
 web3 = {git = "https://github.com/ChorusOne/rust-web3", branch = "celo", features = ["celo"]}
 #web3 = {path = "/home/giulio/src/github.com/ChorusOne/rust-web3", features = ["celo"]}

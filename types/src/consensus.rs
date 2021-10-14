@@ -23,7 +23,7 @@ impl LightConsensusState {
     }
 }
 
-#[cfg(feature = "web3_support")]
+#[cfg(feature = "web3-support")]
 impl From<web3::types::Snapshot<ValidatorData>> for LightConsensusState {
     fn from(snap: web3::types::Snapshot<ValidatorData>) -> Self {
         Self {

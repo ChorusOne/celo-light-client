@@ -1,10 +1,9 @@
+use crate::errors::{Error, Kind};
 use ethereum_types::*;
 use fixed_hash::construct_fixed_hash;
 use impl_rlp::impl_fixed_hash_rlp;
 use rlp::DecoderError;
 use rlp_derive::{RlpDecodable, RlpEncodable};
-
-use crate::errors::{Error, Kind};
 
 pub type IstanbulExtraVanity = H256;
 construct_fixed_hash! {
@@ -108,11 +107,14 @@ impl rlp::Encodable for IstanbulExtra {
 
 ///https://pkg.go.dev/github.com/celo-org/celo-blockchain/consensus/istanbul#ValidatorData
 #[derive(Clone, PartialEq, Debug, RlpEncodable, RlpDecodable)]
-#[cfg_attr(any(test, feature = "serialize"), derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    any(test, feature = "serialize"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct ValidatorData {
-#[cfg_attr(any(test, feature = "serialize"), serde(rename = "Address"))]
+    #[cfg_attr(any(test, feature = "serialize"), serde(rename = "Address"))]
     pub address: Address,
-#[cfg_attr(any(test, feature = "serialize"), serde(rename = "BLSPublicKey"))]
+    #[cfg_attr(any(test, feature = "serialize"), serde(rename = "BLSPublicKey"))]
     pub public_key: SerializedPublicKey,
 }
 impl From<(Address, SerializedPublicKey)> for ValidatorData {
@@ -124,21 +126,35 @@ impl From<(Address, SerializedPublicKey)> for ValidatorData {
     }
 }
 
+pub enum IstanbulMsg {
+    PrePrepare,
+    Prepare,
+    Commit,
+    RoundChange,
+}
+
+pub fn min_quorum_size(total_validators: usize) -> usize {
+    // non-float equivalent of:
+    //  ((2.0*(total_validators as f64) / 3.0) as f64).ceil() as usize
+    ((2 * total_validators) - 1 + 3) / 3
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::convert::TryFrom;
     use std::str::FromStr;
 
     #[test]
     fn istanbul_seal_1() {
-        let hexa = String::from("f3882fbf64b1967f8c53a01b97bb9f4bb472e89f5b1484f25209c9d9343e92ba09dd9d52dfd79b4d76429b88680c5ba53b0d9f9f");
+        let hexa = String::from("f38808e42fb750c1e60da014abd5c47c0be87b0454596baad2e62829913e9dcecbf2b9dee45c6606908694884ef27ef395ccba5e");
         let seal = IstanbulAggregatedSeal {
-            bitmap: U128::from(3440579354231278675 as u64),
+            bitmap: U128::from(640689511373858317 as u64),
             signature: hex::decode(
-                "1b97bb9f4bb472e89f5b1484f25209c9d9343e92ba09dd9d52dfd79b4d76429b",
+                "14abd5c47c0be87b0454596baad2e62829913e9dcecbf2b9dee45c6606908694",
             )
             .unwrap(),
-            round: U128::from(7497468244883513247 as u64),
+            round: U128::from(5688748863977732702 as u64),
         };
         let decoded_seal: IstanbulAggregatedSeal =
             rlp::decode(hex::decode(&hexa).unwrap().as_slice()).unwrap();
@@ -153,8 +169,8 @@ mod tests {
 
     #[test]
     fn istanbul_extra_1() {
-        let hexa = String::from("f90201f85494000000000000000000000000313585884c14d6c09400000000000000000000000031079b70e0cb1a849400000000000000000000000052bc75d3613f0858940000000000000000000000005e2919f9f41db402f90126b860617a0ce18fda9e6f82e54e748e81e79e4bbd6fe34cdcba843ee8d63e8c4ffe1cebea546d8fac13dd1aac04ce2ea2877c5579cfa2c78e1b0bafae881b82a751108a42ed3c903caa43465a78620616978aed0ce3c6c4f3ae7bc3e0495b5712fefdb860be0c102887e100dacd2d885f692cb607da00a11c1c7071e796a2dc2dc25a5b74b2e129705e273f05c92326828e2b056e3817658e1061498947fdf344410ed4c116023fa8e3576b6fed27ff8974bac0cafd9ad05692b13619e738964dfdc79e8db860534373661cfd66d74fec1e1b89491ab7236e4b75216290cf2beb42c3ca27328560f1aac067cea6e8bf46d4ab2b4680402c5fb2820e885d3260f1de978283d4a09a36f96c20941746e3ed4da646a9ae8b4fa7b4fc3a20bafa1a75ed327a86b8b088781912b5b3d2cff190c39aea79533abf448d2c479d32607533f3881df01cccc8145990a09da39e0e929d024abcbcb169397bb734e7ef0a6e01f1854deb5fe424fef7ac218857aab8a22a295e97f388157333b3cd617c04a00891f5ebe72c27a098c02197dae6b732c351df668f874e2c9f1ce09ca86017e78872ed481ce1231b1c");
-        let ista = IstanbulExtra{added_validators: vec![H160::from_str("000000000000000000000000313585884c14d6c0").unwrap(), H160::from_str("00000000000000000000000031079b70e0cb1a84").unwrap(), H160::from_str("00000000000000000000000052bc75d3613f0858").unwrap(), H160::from_str("0000000000000000000000005e2919f9f41db402").unwrap()], added_validators_public_keys: vec![SerializedPublicKey::from_str("617a0ce18fda9e6f82e54e748e81e79e4bbd6fe34cdcba843ee8d63e8c4ffe1cebea546d8fac13dd1aac04ce2ea2877c5579cfa2c78e1b0bafae881b82a751108a42ed3c903caa43465a78620616978aed0ce3c6c4f3ae7bc3e0495b5712fefd").unwrap(), SerializedPublicKey::from_str("be0c102887e100dacd2d885f692cb607da00a11c1c7071e796a2dc2dc25a5b74b2e129705e273f05c92326828e2b056e3817658e1061498947fdf344410ed4c116023fa8e3576b6fed27ff8974bac0cafd9ad05692b13619e738964dfdc79e8d").unwrap(), SerializedPublicKey::from_str("534373661cfd66d74fec1e1b89491ab7236e4b75216290cf2beb42c3ca27328560f1aac067cea6e8bf46d4ab2b4680402c5fb2820e885d3260f1de978283d4a09a36f96c20941746e3ed4da646a9ae8b4fa7b4fc3a20bafa1a75ed327a86b8b0").unwrap()], removed_validators: U128::from(8653968730584436721 as u64), seal: hex::decode("c39aea79533abf448d2c479d32607533").unwrap(), aggregated_seal: IstanbulAggregatedSeal{bitmap: U128::from(2157255887366150544 as u64),signature: hex::decode("9da39e0e929d024abcbcb169397bb734e7ef0a6e01f1854deb5fe424fef7ac21").unwrap(),round: U128::from(6317064433972108951 as u64)},parent_aggregated_seal: IstanbulAggregatedSeal{bitmap: U128::from(1545635944456092676 as u64),signature: hex::decode("0891f5ebe72c27a098c02197dae6b732c351df668f874e2c9f1ce09ca86017e7").unwrap(),round: U128::from(8281354578677668636 as u64)}};
+        let hexa = String::from("f90201f854940000000000000000000000003ff5908bd346cea0940000000000000000000000005a24d687edd344f1940000000000000000000000005872dec9a7cf7f8894000000000000000000000000285374a5f56fc72df90126b8600b9f55af8d098bf818245df362fdc5959b4842e7c0c2a85baeed05fa472c07ec44b2157eb5a3aa6710e245455581e2a7a2671859efb7a32e7a3ff17e369aeba96bb1e1ade64a88d6f0ff14deeb373e542956311aa953d9c11a47dd898dcec4fdb860a72a1700ec91a111ec79588ba850b0c82b66c651760a6433b9618e59798a46e9779dd48996d28e22f71b2950cd3bebc9e12631575bf9e38b646e01da4da873d22b7e7e451f0474f2a51803421304f75e13536aa899ed6356ce2229ee33f82a91b86022e7ed76440face71019d1c68acb1485bb448c105368b00b70eaa1819d70e8ecb40381b248feef78e2a2a185aba377171674537cca30858606ef9e253bab4e5bc52e8b45e28ae82b86b0947bf7ac20e7b62c698b4b79da1d33de6a27b0c195c48858d199624d0959d190e41841b4fbb3b12647692a334a290588f38870448e3a9d2a2d26a07e9b3813ee0b1e8df15ee53509572dadd1f7241f7e1f1980b6cd7f3032dcbf1a88494e0234ac4c502ef3883ca13b76e2c8b14aa0fcc908a347af29c6432de41537b4c4dcdb23689d41b24a07f42dfacacec2cf418865e5c8804f910d7f");
+        let ista = IstanbulExtra{added_validators: vec![H160::from_str("0000000000000000000000003ff5908bd346cea0").unwrap(), H160::from_str("0000000000000000000000005a24d687edd344f1").unwrap(), H160::from_str("0000000000000000000000005872dec9a7cf7f88").unwrap(), H160::from_str("000000000000000000000000285374a5f56fc72d").unwrap()], added_validators_public_keys: vec![SerializedPublicKey::from_str("0b9f55af8d098bf818245df362fdc5959b4842e7c0c2a85baeed05fa472c07ec44b2157eb5a3aa6710e245455581e2a7a2671859efb7a32e7a3ff17e369aeba96bb1e1ade64a88d6f0ff14deeb373e542956311aa953d9c11a47dd898dcec4fd").unwrap(), SerializedPublicKey::from_str("a72a1700ec91a111ec79588ba850b0c82b66c651760a6433b9618e59798a46e9779dd48996d28e22f71b2950cd3bebc9e12631575bf9e38b646e01da4da873d22b7e7e451f0474f2a51803421304f75e13536aa899ed6356ce2229ee33f82a91").unwrap(), SerializedPublicKey::from_str("22e7ed76440face71019d1c68acb1485bb448c105368b00b70eaa1819d70e8ecb40381b248feef78e2a2a185aba377171674537cca30858606ef9e253bab4e5bc52e8b45e28ae82b86b0947bf7ac20e7b62c698b4b79da1d33de6a27b0c195c4").unwrap()], removed_validators: U128::from(6400065192948488657 as u64), seal: hex::decode("e41841b4fbb3b12647692a334a290588").unwrap(), aggregated_seal: IstanbulAggregatedSeal{bitmap: U128::from(8089747213060287782 as u64),signature: hex::decode("7e9b3813ee0b1e8df15ee53509572dadd1f7241f7e1f1980b6cd7f3032dcbf1a").unwrap(),round: U128::from(5282161838204407854 as u64)},parent_aggregated_seal: IstanbulAggregatedSeal{bitmap: U128::from(4368838495323074890 as u64),signature: hex::decode("fcc908a347af29c6432de41537b4c4dcdb23689d41b24a07f42dfacacec2cf41").unwrap(),round: U128::from(7342495220913737087 as u64)}};
         let extra_bytes = prepend_vanity(&hexa);
         let decoded_ist = IstanbulExtra::from_rlp(&extra_bytes).unwrap();
 
@@ -188,4 +204,5 @@ mod tests {
 
         [&vanity[..], &data[..]].concat()
     }
+
 }

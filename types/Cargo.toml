@@ -21,11 +21,21 @@ anomaly = { version = "0.2", default-features = false }
 thiserror = { version = "1.0", default-features = false }
 sha3 = { version = "0.9", default-features = false }
 
+#bls-crypto = {git = "https://github.com/celo-org/celo-bls-snark-rs"}
+bls-crypto = {path = "/home/giulio/src/github.com/ChorusOne/celo-bls-snark-rs/crates/bls-crypto", optional = true}
+ark-serialize = {version = "0.3", default-features = false, optional = true }
+
 [dev-dependencies]
+serde = { version = "1", features = ["derive"]}
+ethereum-types = {version = "0.11", default-features = false, features = ["rlp", "serialize"]}
 serde_json = {version = "1.0"}
 secp256k1 = { version = "0.20", features = ["bitcoin_hashes", "rand"] }
 rand = { version = "0.6"}
+fixed-hash = {version = "0.7"}
+bls-crypto = {path = "/home/giulio/src/github.com/ChorusOne/celo-bls-snark-rs/crates/bls-crypto"}
+ark-serialize = {version = "0.3", default-features = false}
 
 [features]
-web3_support = ["web3"]
+web3-support = ["web3"]
 serialize = ["serde", "ethereum-types/serialize"]
+bls-support = ["bls-crypto", "ark-serialize"]

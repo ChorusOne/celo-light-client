@@ -20,10 +20,21 @@ pub enum Kind {
     #[error("invalid validator set diff: {msg}")]
     InvalidValidatorSetDiff { msg: &'static str },
 
-    #[cfg(feature = "web3_support")]
+    #[cfg(feature = "web3-support")]
     #[error("missing field {field}")]
     MissingField{field: String},
 
+    #[error("BLS verify error")]
+    BlsVerifyError,
+
+    #[error("BLS invalid signature")]
+    BlsInvalidSignature,
+
+    #[error("BLS invalid public key")]
+    BlsInvalidPublicKey,
+
+   #[error("aggregated seal does not aggregate enough seals, num_seals: {current}, minimum quorum size: {expected}")]
+    MissingSeals { current: usize, expected: usize },
 }
 
 impl Kind {

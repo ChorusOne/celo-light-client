@@ -1,6 +1,7 @@
 use crate::client::StateConfig;
 use crate::consensus::LightConsensusState;
-use crate::istanbul::ValidatorData;
+use crate::istanbul::*;
+use crate::verify_aggregated_seal;
 use crate::{extract_istanbul_extra, hash_header, is_last_block_of_epoch};
 use crate::{Error, Header, Kind};
 use ethereum_types::{Address, U128};
@@ -23,20 +24,16 @@ impl<'a, Cfg> State<'a, Cfg> {
 
     pub fn add_validators(&mut self, validators: Vec<ValidatorData>) -> bool {
         let mut new_address_map: HashMap<Address, bool> = HashMap::new();
-
         for validator in validators.iter() {
             new_address_map.insert(validator.address, true);
         }
-
         // Verify that the validators to add is not already in the valset
         for v in self.snapshot.validators.iter() {
             if new_address_map.contains_key(&v.address) {
                 return false;
             }
         }
-
         self.snapshot.validators.extend(validators);
-
         true
     }
 
@@ -44,11 +41,9 @@ impl<'a, Cfg> State<'a, Cfg> {
         if removed_validators.bits() == 0 {
             return true;
         }
-
         if removed_validators.bits() > self.snapshot.validators.len() {
             return false;
         }
-
         let filtered_validators: Vec<ValidatorData> = self
             .snapshot
             .validators
@@ -57,9 +52,7 @@ impl<'a, Cfg> State<'a, Cfg> {
             .filter(|(i, _)| !removed_validators.bit(*i))
             .map(|(_, v)| v.to_owned())
             .collect();
-
         self.snapshot.validators = filtered_validators;
-
         true
     }
 
@@ -74,7 +67,6 @@ impl<'a, Cfg> State<'a, Cfg> {
             }
             .into());
         }
-
         if self.config.verify_header_timestamp() {
             // don't waste time checking blocks from the future
             if header.time.as_u64() > current_timestamp + self.config.allowed_clock_skew() {
@@ -84,22 +76,17 @@ impl<'a, Cfg> State<'a, Cfg> {
                 .into());
             }
         }
-
         self.verify_header_seal(header)
     }
 
     pub fn verify_header_seal(&self, header: &Header) -> Result<(), Error> {
-        let _header_hash = hash_header(header);
-        let _extra = extract_istanbul_extra(header)?;
-
-        /* TODO
+        let header_hash = hash_header(header);
+        let extra = extract_istanbul_extra(header)?;
         verify_aggregated_seal(
-        header_hash,
-        &self.snapshot.validators,
-        &extra.aggregated_seal,
+            header_hash,
+            &self.snapshot.validators,
+            &extra.aggregated_seal,
         )
-        */
-        Ok(())
     }
 
     pub fn insert_header(&mut self, header: &Header, current_timestamp: u64) -> Result<(), Error>
@@ -128,17 +115,14 @@ impl<'a, Cfg> State<'a, Cfg> {
         if self.config.verify_non_epoch_headers() && !header.number.is_zero() {
             self.verify_header(header, current_timestamp)?
         }
-
         let _extra = extract_istanbul_extra(header)?;
         let snapshot = LightConsensusState {
             // The validator state stays unchanged (ONLY updated with epoch header)
             validators: self.snapshot.validators.clone(),
-
             // Update the header related fields
             number: header.number.as_u64(),
             hash: hash_header(header),
         };
-
         self.update_state_snapshot(snapshot)
     }
 
@@ -150,10 +134,8 @@ impl<'a, Cfg> State<'a, Cfg> {
         if self.config.verify_epoch_headers() && !header.number.is_zero() {
             self.verify_header(header, current_timestamp)?
         }
-
         let header_hash = hash_header(header);
         let extra = extract_istanbul_extra(header)?;
-
         // convert istanbul validators into a ValidatorDatastruct
         let mut validators: Vec<ValidatorData> = Vec::new();
         if extra.added_validators.len() != extra.added_validators_public_keys.len() {
@@ -162,14 +144,12 @@ impl<'a, Cfg> State<'a, Cfg> {
             }
             .into());
         }
-
         for i in 0..extra.added_validators.len() {
             validators.push(ValidatorData {
                 address: extra.added_validators[i],
                 public_key: extra.added_validators_public_keys[i],
             })
         }
-
         // apply the header's changeset
         let result_remove = self.remove_validators(&extra.removed_validators);
         if !result_remove {
@@ -178,7 +158,6 @@ impl<'a, Cfg> State<'a, Cfg> {
             }
             .into());
         }
-
         let result_add = self.add_validators(validators);
         if !result_add {
             return Err(Kind::InvalidValidatorSetDiff {
@@ -186,23 +165,19 @@ impl<'a, Cfg> State<'a, Cfg> {
             }
             .into());
         }
-
         let snapshot = LightConsensusState {
             number: header.number.as_u64(),
             validators: self.snapshot.validators.clone(),
             hash: header_hash,
         };
-
         self.update_state_snapshot(snapshot)
     }
 
     fn update_state_snapshot(&mut self, snapshot: LightConsensusState) -> Result<(), Error> {
         // NOTE: right now we store only the last state entry but we could add
         // a feature to store X past entries for querying / debugging
-
         // update local state
         self.snapshot = snapshot;
-
         Ok(())
     }
 }
@@ -212,7 +187,6 @@ mod tests {
     use super::*;
     use crate::client::Config;
     use crate::consensus::LightConsensusState;
-    use crate::istanbul::{IstanbulAggregatedSeal, SerializedPublicKey};
     use ethereum_types::H256;
     use rand::rngs::OsRng;
     use secp256k1::key::{PublicKey, SecretKey};
@@ -221,7 +195,7 @@ mod tests {
     use std::ops::BitOr;
 
     macro_rules! string_vec {
-    ($($x:expr),*) => (vec![$($x.to_string()),*]);
+        ($($x:expr),*) => (vec![$($x.to_string()),*]);
     }
 
     struct ValidatorSetDiff {
@@ -410,7 +384,7 @@ mod tests {
                 ],
                 results: string_vec!["E", "F"],
             },
-        ];
+            ];
 
         for test in tests {
             let snapshot = LightConsensusState::default();

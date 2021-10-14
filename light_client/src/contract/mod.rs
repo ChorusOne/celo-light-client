@@ -1194,11 +1194,6 @@ pub(crate) fn check_substitute_client_state(
     let _latest_consensus_state_bytes =
         get_consensus_state(deps.storage, SUBJECT_PREFIX, &me.latest_height)?;
 
-    let latest_consensus_state = PartialConsensusState::default();
-    //let latest_consensus_state =
-    //PartialConsensusState::decode(latest_consensus_state_bytes.as_slice()).unwrap();
-    let latest_light_consensus_state: LightConsensusState =
-        rlp::decode(&latest_consensus_state.data).map_err(to_generic_err)?;
 
     wrap_response(
         &CheckSubstituteAndUpdateStateResult {
