@@ -1,92 +1,75 @@
-use crate::{Error, Height, Kind, MerkleRoot, ProofSpec};
-use celo_types::{client::LightClientState, consensus::LightConsensusState};
+use crate::{Error, Kind};
+use cosmwasm_std::Binary;
+use ibc_proto::ibc::core::client::v1::Height;
+use ethereum_types::H256;
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-pub struct ConsensusState {
-    pub data: String,
-    pub code_id: String,
+
+#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct ConsensusState<T> {
+    pub data: Binary,
     pub timestamp: u64,
-    pub root: MerkleRoot,
+    root: [u8;H256::len_bytes()], // H256 does not derive JsonSchema
+    phantom: std::marker::PhantomData<T>,
 }
-impl ConsensusState {
-    pub fn new(
-        lc: &LightConsensusState,
-        code_id: String,
-        timestamp: u64,
-        root: MerkleRoot,
-    ) -> Self {
+
+impl<T> ConsensusState<T> {
+    pub fn from_raw(data: Binary, timestamp: u64, root: H256) -> Self {
+        Self{data, timestamp, root: root.0, phantom: std::marker::PhantomData}
+    }
+    pub fn root(&self) -> H256 {
+        H256::from(self.root)
+    }
+}
+
+impl<T: rlp::Encodable> ConsensusState<T> {
+    pub fn new(lc: &T, timestamp: u64, root: H256) -> Self {
         let r = rlp::encode(lc);
         Self {
-            data: base64::encode(r),
-            code_id,
+            data: Binary::from(r.as_ref()),
             timestamp,
-            root,
+            root:   root.0,
+            phantom: std::marker::PhantomData,
         }
     }
 }
-impl Default for ConsensusState {
-    fn default() -> Self {
-        let lc = LightConsensusState::default();
-        ConsensusState::new(&lc, String::default(), 0, MerkleRoot::default())
-    }
-}
-pub fn extract_lc_consensus_state(cs: &ConsensusState) -> Result<LightConsensusState, Error> {
-    let v: Vec<u8> = base64::decode(&cs.data).map_err(|e| {
-        let k: Kind = e.into();
-        let e: Error = k.into();
-        e
-    })?;
-    rlp::decode(&v).map_err(|e| {
-        let k: Kind = e.into();
-        k.into()
-    })
-}
-pub fn extract_code_id_from_consensus(cs: &ConsensusState) -> Result<Vec<u8>, Error> {
-    base64::decode(&cs.code_id).map_err(|e| {
+
+pub fn extract_consensus<T: rlp::Decodable>(cs: &ConsensusState<T>) -> Result<T, Error> {
+    rlp::decode(&cs.data).map_err(|e| {
         let k: Kind = e.into();
         k.into()
     })
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-pub struct ClientState {
-    pub data: String,
-    pub code_id: String,
+#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct ClientState<T> {
+    pub data: cosmwasm_std::Binary,
+    pub code_id: cosmwasm_std::Binary,
     pub latest_height: Height,
-    pub proof_specs: Vec<ProofSpec>,
     pub frozen_height: Option<Height>,
+    phantom: std::marker::PhantomData<T>,
 }
-impl ClientState {
-    pub fn new(
-        lc: &LightClientState,
-        code_id: String,
-        latest_height: Height,
-        proof_specs: Vec<ProofSpec>,
-    ) -> Self {
+
+impl<T> ClientState<T> {
+    pub fn from_raw(data: Binary, code_id: Binary, latest_height: Height, frozen_height: Option<Height>) -> Self {
+        Self{data, code_id, latest_height, frozen_height, phantom: std::marker::PhantomData}
+    }
+}
+
+impl<T: rlp::Encodable> ClientState<T> {
+    pub fn new(lc: &T, code_id: Binary, latest_height: Height) -> Self {
         let r = rlp::encode(lc);
         Self {
-            data: base64::encode(r),
+            data: Binary::from(r.as_ref()),
             code_id,
             latest_height,
-            proof_specs,
             frozen_height: None,
+            phantom: std::marker::PhantomData,
         }
     }
 }
-impl Default for ClientState {
-    fn default() -> Self {
-        let lc = LightClientState::default();
-        ClientState::new(&lc, String::default(), Height::default(), Vec::default())
-    }
-}
 
-pub fn extract_lc_client_state(cs: &ClientState) -> Result<LightClientState, Error> {
-    let v: Vec<u8> = base64::decode(&cs.data).map_err(|e| {
-        let k: Kind = e.into();
-        let e: Error = k.into();
-        e
-    })?;
-    rlp::decode(&v).map_err(|e| {
+pub fn extract_client<T: rlp::Decodable>(cs: &ClientState<T>) -> Result<T, Error> {
+    rlp::decode(&cs.data).map_err(|e| {
         let k: Kind = e.into();
         k.into()
     })

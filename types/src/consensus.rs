@@ -5,22 +5,19 @@ use rlp_derive::{RlpDecodable, RlpEncodable};
 
 /// LightConsensusState represents an IBFT consensus state at specified block height
 #[derive(RlpDecodable, RlpEncodable, Clone, PartialEq, Debug, Default)]
-#[cfg_attr(any(test, feature = "serialize"), derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(any(test, feature = "serialize"), derive(serde::Deserialize, serde::Serialize))]
 pub struct LightConsensusState {
     /// Block number at which the snapshot was created
     pub number: u64,
     /// Snapshot of current validator set
     pub validators: Vec<ValidatorData>,
     // Hash and aggregated seal are required to validate the header against the validator set
-    /// Block H256
+    /// Block H256, or state root
     pub hash: H256,
 }
 
-impl LightConsensusState {
-    pub fn verify(&self) -> Result<(), Error> {
-        //TODO!!!
-        Ok(())
-    }
+pub fn verify(_lc: &LightConsensusState) -> Result<(), Error> {
+    todo!()
 }
 
 #[cfg(feature = "web3-support")]

@@ -1,4 +1,3 @@
-pub mod bls;
 pub mod client;
 pub mod consensus;
 pub mod errors;
@@ -6,6 +5,10 @@ pub mod header;
 pub mod istanbul;
 pub mod serialization;
 pub mod state;
+pub mod proof;
+pub(crate) mod test_proofs;
+//pub mod verify2;
+pub mod verify;
 
 #[cfg(test)]
 mod integration;
@@ -14,13 +17,15 @@ pub use errors::{Error, Kind};
 pub use header::Header;
 use istanbul::*;
 
-#[cfg(any(test, feature = "bls-support"))]
+#[cfg(any(feature = "bls-support"))]
+pub mod bls;
+#[cfg(any(feature = "bls-support"))]
 use bls::*;
-#[cfg(not(any(test, feature = "bls-support")))]
-pub fn verify_aggregated_seal(
-   _header_hash: H256,
-   _validators: &[ValidatorData],
-   _seal: &IstanbulAggregatedSeal,
+#[cfg(not(feature = "bls-support"))]
+pub(crate) fn verify_aggregated_seal(
+    _header_hash: H256,
+    _validators: &[ValidatorData],
+    _seal: &IstanbulAggregatedSeal,
 ) -> Result<(), Error> {
     Ok(())
 }

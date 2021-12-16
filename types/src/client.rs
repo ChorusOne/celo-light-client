@@ -2,6 +2,7 @@ use rlp_derive::{RlpDecodable, RlpEncodable};
 
 #[derive(RlpDecodable, RlpEncodable, Clone, PartialEq, Debug, Default)]
 pub struct LightClientState {
+    pub chain_id: u64,
     pub epoch_size: u64,
     pub allowed_clock_skew: u64,
     pub trusting_period: u64,
@@ -17,8 +18,9 @@ pub struct LightClientState {
 
 /// Config contains state related configuration flags
 #[derive(RlpEncodable, RlpDecodable, Clone, PartialEq, Eq, Debug)]
-#[cfg_attr(any(test, feature = "serialize"), derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(any(test, feature = "serialize"), derive(serde::Deserialize))]
 pub struct Config {
+    pub chain_id: u64,
     pub epoch_size: u64,
     pub allowed_clock_skew: u64,
     pub verify_epoch_headers: bool,
@@ -27,6 +29,8 @@ pub struct Config {
 }
 
 pub trait StateConfig {
+    /// ChainID as in eth_chainId
+    fn chain_id(&self) -> u64;
     /// Epoch size expressed in number of blocks
     fn epoch_size(&self) -> u64;
     /// Defines how far block timestamp can go in the future
@@ -41,6 +45,9 @@ pub trait StateConfig {
 }
 
 impl StateConfig for LightClientState {
+    fn chain_id(&self) -> u64 {
+        self.chain_id
+    }
     fn epoch_size(&self) -> u64 {
         self.epoch_size
     }
@@ -59,6 +66,9 @@ impl StateConfig for LightClientState {
     }
 }
 impl StateConfig for Config {
+    fn chain_id(&self) -> u64 {
+        self.chain_id
+    }
     fn epoch_size(&self) -> u64 {
         self.epoch_size
     }

@@ -62,6 +62,7 @@ impl IstanbulExtra {
             .map_err(|e| Kind::RlpDecodeError.context(e).into())
     }
 
+    #[cfg(test)]
     pub(crate) fn to_rlp(&self, vanity: &IstanbulExtraVanity) -> Vec<u8> {
         let payload = rlp::encode(self);
         [&vanity[..], &payload[..]].concat()
@@ -107,10 +108,7 @@ impl rlp::Encodable for IstanbulExtra {
 
 ///https://pkg.go.dev/github.com/celo-org/celo-blockchain/consensus/istanbul#ValidatorData
 #[derive(Clone, PartialEq, Debug, RlpEncodable, RlpDecodable)]
-#[cfg_attr(
-    any(test, feature = "serialize"),
-    derive(serde::Serialize, serde::Deserialize)
-)]
+#[cfg_attr(any(test, feature = "serialize"), derive(serde::Deserialize, serde::Serialize))]
 pub struct ValidatorData {
     #[cfg_attr(any(test, feature = "serialize"), serde(rename = "Address"))]
     pub address: Address,
@@ -142,7 +140,6 @@ pub fn min_quorum_size(total_validators: usize) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::convert::TryFrom;
     use std::str::FromStr;
 
     #[test]
@@ -204,5 +201,4 @@ mod tests {
 
         [&vanity[..], &data[..]].concat()
     }
-
 }

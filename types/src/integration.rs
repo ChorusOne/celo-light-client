@@ -1,10 +1,10 @@
 use crate::{consensus::*, istanbul::*, state::*, *};
-use std::{fs::File, io::BufReader, convert::TryFrom};
+use std::{fs::File, io::BufReader};
 
 //WARNING!!! this is super slow, it takes more than 5 minutes to run
-const BAKLAVA_FILE :&str = "data/baklava.json";
+//const BAKLAVA_FILE :&str = "data/baklava.json";
 // when tests fail and you want to test on a subset of headers // faster cycle
-//const BAKLAVA_FILE :&str = "data/baklava_small.json"; 
+const BAKLAVA_FILE: &str = "data/baklava_small.json";
 
 pub fn get_genesis() -> LightConsensusState {
     let blocks = read_headers();
@@ -44,6 +44,7 @@ fn read_headers() -> Vec<Header> {
 #[test]
 fn run_baklava() {
     let cfg = client::Config {
+        chain_id: 1,
         epoch_size: 17280,
         allowed_clock_skew: 5,
         verify_epoch_headers: true,
@@ -58,13 +59,11 @@ fn run_baklava() {
     for head in heads {
         println!("cons {:?} - header {:?}", lcons.number, head.number);
         let res = state.insert_header(&head, head.time.as_u64());
-        assert!(
-            res.is_ok(),
-            format!("failed at header {} -> {:?}", head.number.as_u64(), res)
-        )
+        assert!(res.is_ok());
     }
 }
 
+#[cfg(feature = "bls-support")]
 #[test]
 fn alfajores_snapshot_to_validators_bls_public_key() {
     let snapshot_json = String::from(
@@ -76,6 +75,6 @@ fn alfajores_snapshot_to_validators_bls_public_key() {
         .validators
         .into_iter()
         .map(|validator| bls_crypto::PublicKey::try_from(validator.public_key))
-        .collect::<Result<_,_>>()
+        .collect::<Result<_, _>>()
         .unwrap();
 }

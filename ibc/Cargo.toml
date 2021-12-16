@@ -7,16 +7,15 @@ edition = "2018"
 
 [dependencies]
 ethereum-types = {version = "0.11", default-features = false}
-celo-types = {path = "../types"}
 rlp = {version = "0.5"}
-base64 = { version = "0.13"}
 serde = { version = "1", features = ["derive"]}
 schemars = { version = "0.8"}
 anomaly = { version = "0.2", default-features = false }
 thiserror = { version = "1.0", default-features = false }
+cosmwasm-std = { version = "0.16", default-features = false }
 
 #ibc-proto = {git = "https://github.com/ChorusOne/ibc-rs", branch = "giulio/realcelochain", default-features = false, optional = true}
-ibc-proto = {path = "/home/giulio/src/github.com/ChorusOne/ibc-rs/proto", default-features = false, optional = true}
+#ibc-proto = {path = "/home/giulio/src/github.com/ChorusOne/ibc-rs/proto", default-features = false, optional = true}
+ibc-proto = {path = "/home/giulio/src/github.com/ChorusOne/ibc-rs/proto", default-features = false, features = ["std"]}
 
 [features]
-conversions = ["ibc-proto"]

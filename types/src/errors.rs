@@ -1,5 +1,6 @@
 use anomaly::{BoxError, Context};
 use thiserror::Error;
+use ethereum_types::U256;
 
 /// The main error type verification methods will return.
 /// See [`Kind`] for the different kind of errors.
@@ -22,7 +23,7 @@ pub enum Kind {
 
     #[cfg(feature = "web3-support")]
     #[error("missing field {field}")]
-    MissingField{field: String},
+    MissingField { field: String },
 
     #[error("BLS verify error")]
     BlsVerifyError,
@@ -33,8 +34,20 @@ pub enum Kind {
     #[error("BLS invalid public key")]
     BlsInvalidPublicKey,
 
-   #[error("aggregated seal does not aggregate enough seals, num_seals: {current}, minimum quorum size: {expected}")]
+    #[error("aggregated seal does not aggregate enough seals, num_seals: {current}, minimum quorum size: {expected}")]
     MissingSeals { current: usize, expected: usize },
+
+    #[error("Storage key is not present in the proof")]
+    StorageProofKeyNotPresent,
+
+    #[error("Storage key is not matching, current: {current} vs expected: {expected}")]
+    StorageProofKeyNotMatching{current: U256, expected: U256},
+
+    #[error("Storage value is not matching, current: {current} vs expected: {expected}")]
+    StorageProofValueNotMatching{current: U256, expected: U256},
+
+    #[error("proof verification error: {error}")]
+    ProofVerification{error: String},
 }
 
 impl Kind {

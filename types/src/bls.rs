@@ -2,15 +2,14 @@
 use crate::errors::*;
 use crate::istanbul::*;
 use ethereum_types::*;
-use std::convert::TryFrom;
 
+use ark_serialize::CanonicalDeserialize;
 use bls_crypto::{
     hash_to_curve::try_and_increment::DIRECT_HASH_TO_G1, PublicKey as BLSPublicKey,
     Signature as BLSSignature,
 };
-use ark_serialize::CanonicalDeserialize;
 
-pub fn verify_aggregated_seal(
+pub(crate) fn verify_aggregated_seal(
     header_hash: H256,
     validators: &[ValidatorData],
     seal: &IstanbulAggregatedSeal,
@@ -62,7 +61,7 @@ impl std::convert::TryFrom<SerializedPublicKey> for BLSPublicKey {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "bls-support"))]
 mod test {
     use super::*;
     use ethereum_types::*;

@@ -2,10 +2,7 @@ use ethereum_types::*;
 
 /// https://pkg.go.dev/github.com/celo-org/celo-blockchain/core/types#Header
 #[derive(Clone, PartialEq, Debug)]
-#[cfg_attr(
-    any(test, feature = "serialize"),
-    derive(serde::Serialize, serde::Deserialize)
-)]
+#[cfg_attr(any(test, feature = "serialize"), derive(serde::Deserialize))]
 #[cfg_attr(any(test, feature = "serialize"), serde(rename_all = "camelCase"))]
 pub struct Header {
     pub parent_hash: H256,

@@ -188,11 +188,24 @@ mod tests {
     use crate::client::Config;
     use crate::consensus::LightConsensusState;
     use ethereum_types::H256;
-    use rand::rngs::OsRng;
     use secp256k1::key::{PublicKey, SecretKey};
     use secp256k1::Secp256k1;
     use sha3::{Digest, Keccak256};
     use std::ops::BitOr;
+
+    pub struct KeyPairGenerator {
+        generator: secp256k1::rand::rngs::mock::StepRng,
+    }
+    impl KeyPairGenerator {
+        fn new() -> Self {
+            let mut rng = secp256k1::rand::rngs::mock::StepRng::new(42, 17);
+            Self { generator: rng }
+        }
+        fn generate_key(&mut self) -> (SecretKey, PublicKey) {
+            let secp = Secp256k1::new();
+            secp.generate_keypair(&mut self.generator)
+        }
+    }
 
     macro_rules! string_vec {
         ($($x:expr),*) => (vec![$($x.to_string()),*]);
@@ -216,6 +229,8 @@ mod tests {
     }
     fn state_config() -> Config {
         Config {
+            chain_id: 1,
+
             epoch_size: 123,
             allowed_clock_skew: 123,
 
@@ -227,11 +242,13 @@ mod tests {
 
     struct AccountPool {
         pub accounts: HashMap<String, (SecretKey, PublicKey)>,
+        generator: KeyPairGenerator,
     }
     impl AccountPool {
         fn new() -> Self {
             Self {
                 accounts: HashMap::new(),
+                generator: KeyPairGenerator::new(),
             }
         }
 
@@ -241,7 +258,8 @@ mod tests {
             }
 
             if !self.accounts.contains_key(&account) {
-                self.accounts.insert(account.clone(), generate_key());
+                self.accounts
+                    .insert(account.clone(), self.generator.generate_key());
             }
 
             pubkey_to_address(self.accounts.get(&account).unwrap().1)
@@ -418,13 +436,6 @@ mod tests {
         v.extend_from_slice(bytes);
 
         Address::from_slice(&v)
-    }
-
-    fn generate_key() -> (SecretKey, PublicKey) {
-        let mut rng = OsRng::new().expect("OsRng");
-        let secp = Secp256k1::new();
-
-        secp.generate_keypair(&mut rng)
     }
 
     fn convert_val_names_to_validators(
