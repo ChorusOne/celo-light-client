@@ -1,4 +1,4 @@
-use crate::errors::{Error, Kind};
+use crate::errors::{Error};
 use crate::proof::{Account, Proof};
 use byte_slice_cast::AsByteSlice;
 use core::borrow::Borrow;
@@ -161,18 +161,16 @@ pub fn verify(
 ) -> Result<(), Error> {
     if let Some(storage_proof) = proof.storage_proof.first() {
         if storage_proof.key != expected_key {
-            return Err(Kind::StorageProofKeyNotMatching {
+            return Err(Error::StorageProofKeyNotMatching {
                 current: storage_proof.key,
                 expected: expected_key,
-            }
-            .into());
+            });
         }
         if storage_proof.value != expected_value.unwrap_or_default() {
-            return Err(Kind::StorageProofValueNotMatching {
+            return Err(Error::StorageProofValueNotMatching {
                 current: storage_proof.value,
                 expected: expected_value.unwrap_or_default(),
-            }
-            .into());
+            });
         }
         let value = expected_value.map(|v| AsByteSlice::as_byte_slice(&v).to_vec());
         trie_db::proof::eip1186::verify_proof::<CeloLayout>(
@@ -181,7 +179,7 @@ pub fn verify(
             AsByteSlice::as_byte_slice(&expected_key),
             value.as_deref(),
         )
-        .map_err(|e| Kind::ProofVerification {
+        .map_err(|e| Error::ProofVerification {
             error: format!("{:?}", e),
         })?;
         let account = Account {
@@ -197,12 +195,12 @@ pub fn verify(
             &key,
             Some(&rlp::encode(&account)),
         )
-        .map_err(|e| Kind::ProofVerification {
+        .map_err(|e| Error::ProofVerification {
             error: format!("{:?}", e),
         })?;
         Ok(())
     } else {
-        Err(Kind::StorageProofKeyNotPresent.into())
+        Err(Error::StorageProofKeyNotPresent)
     }
 }
 

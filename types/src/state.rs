@@ -3,7 +3,7 @@ use crate::consensus::LightConsensusState;
 use crate::istanbul::*;
 use crate::verify_aggregated_seal;
 use crate::{extract_istanbul_extra, hash_header, is_last_block_of_epoch};
-use crate::{Error, Header, Kind};
+use crate::{Error, Header};
 use ethereum_types::{Address, U128};
 use std::collections::HashMap;
 
@@ -57,27 +57,21 @@ impl<'a, Cfg> State<'a, Cfg> {
     }
 
     pub fn verify_header(&self, header: &Header, current_timestamp: u64) -> Result<(), Error>
-    where
+        where
         Cfg: StateConfig,
-    {
-        // assert header height is newer than any we know
-        if header.number.as_u64() <= self.snapshot.number {
-            return Err(Kind::HeaderVerificationError {
-                msg: "header height should be greater than the last one stored in state",
+        {
+            // assert header height is newer than any we know
+            if header.number.as_u64() <= self.snapshot.number {
+                return Err(Error::HeaderVerificationError(String::from("header height should be greater than the last one stored in state")));
             }
-            .into());
-        }
-        if self.config.verify_header_timestamp() {
-            // don't waste time checking blocks from the future
-            if header.time.as_u64() > current_timestamp + self.config.allowed_clock_skew() {
-                return Err(Kind::HeaderVerificationError {
-                    msg: "header timestamp is set too far in the future",
+            if self.config.verify_header_timestamp() {
+                // don't waste time checking blocks from the future
+                if header.time.as_u64() > current_timestamp + self.config.allowed_clock_skew() {
+                    return Err(Error::HeaderVerificationError(String::from("header timestamp is set too far in the future")));
                 }
-                .into());
             }
+            self.verify_header_seal(header)
         }
-        self.verify_header_seal(header)
-    }
 
     pub fn verify_header_seal(&self, header: &Header) -> Result<(), Error> {
         let header_hash = hash_header(header);
@@ -86,92 +80,83 @@ impl<'a, Cfg> State<'a, Cfg> {
             header_hash,
             &self.snapshot.validators,
             &extra.aggregated_seal,
-        )
+            )
     }
 
     pub fn insert_header(&mut self, header: &Header, current_timestamp: u64) -> Result<(), Error>
-    where
+        where
         Cfg: StateConfig,
-    {
-        let block_num = header.number.as_u64();
-        if is_last_block_of_epoch(block_num, self.config.epoch_size()) {
-            // The validator set is about to be updated with epoch header
-            self.store_epoch_header(header, current_timestamp)
-        } else {
-            // ValidatorDataset is not being updated
-            self.store_non_epoch_header(header, current_timestamp)
+        {
+            let block_num = header.number.as_u64();
+            if is_last_block_of_epoch(block_num, self.config.epoch_size()) {
+                // The validator set is about to be updated with epoch header
+                self.store_epoch_header(header, current_timestamp)
+            } else {
+                // ValidatorDataset is not being updated
+                self.store_non_epoch_header(header, current_timestamp)
+            }
         }
-    }
 
     fn store_non_epoch_header(
         &mut self,
         header: &Header,
         current_timestamp: u64,
-    ) -> Result<(), Error>
-    where
-        Cfg: StateConfig,
-    {
-        // genesis block is valid dead end
-        if self.config.verify_non_epoch_headers() && !header.number.is_zero() {
-            self.verify_header(header, current_timestamp)?
+        ) -> Result<(), Error>
+        where
+            Cfg: StateConfig,
+        {
+            // genesis block is valid dead end
+            if self.config.verify_non_epoch_headers() && !header.number.is_zero() {
+                self.verify_header(header, current_timestamp)?
+            }
+            let _extra = extract_istanbul_extra(header)?;
+            let snapshot = LightConsensusState {
+                // The validator state stays unchanged (ONLY updated with epoch header)
+                validators: self.snapshot.validators.clone(),
+                // Update the header related fields
+                number: header.number.as_u64(),
+                hash: hash_header(header),
+            };
+            self.update_state_snapshot(snapshot)
         }
-        let _extra = extract_istanbul_extra(header)?;
-        let snapshot = LightConsensusState {
-            // The validator state stays unchanged (ONLY updated with epoch header)
-            validators: self.snapshot.validators.clone(),
-            // Update the header related fields
-            number: header.number.as_u64(),
-            hash: hash_header(header),
-        };
-        self.update_state_snapshot(snapshot)
-    }
 
     fn store_epoch_header(&mut self, header: &Header, current_timestamp: u64) -> Result<(), Error>
-    where
-        Cfg: StateConfig,
-    {
-        // genesis block is valid dead end
-        if self.config.verify_epoch_headers() && !header.number.is_zero() {
-            self.verify_header(header, current_timestamp)?
-        }
-        let header_hash = hash_header(header);
-        let extra = extract_istanbul_extra(header)?;
-        // convert istanbul validators into a ValidatorDatastruct
-        let mut validators: Vec<ValidatorData> = Vec::new();
-        if extra.added_validators.len() != extra.added_validators_public_keys.len() {
-            return Err(Kind::InvalidValidatorSetDiff {
-                msg: "error in combining addresses and public keys",
+        where
+            Cfg: StateConfig,
+        {
+            // genesis block is valid dead end
+            if self.config.verify_epoch_headers() && !header.number.is_zero() {
+                self.verify_header(header, current_timestamp)?
             }
-            .into());
-        }
-        for i in 0..extra.added_validators.len() {
-            validators.push(ValidatorData {
-                address: extra.added_validators[i],
-                public_key: extra.added_validators_public_keys[i],
-            })
-        }
-        // apply the header's changeset
-        let result_remove = self.remove_validators(&extra.removed_validators);
-        if !result_remove {
-            return Err(Kind::InvalidValidatorSetDiff {
-                msg: "error in removing the header's removed_validators",
+            let header_hash = hash_header(header);
+            let extra = extract_istanbul_extra(header)?;
+            // convert istanbul validators into a ValidatorDatastruct
+            let mut validators: Vec<ValidatorData> = Vec::new();
+            if extra.added_validators.len() != extra.added_validators_public_keys.len() {
+                return Err(Error::InvalidValidatorSetDiff(String::from("error in combining addresses and public keys")));
             }
-            .into());
-        }
-        let result_add = self.add_validators(validators);
-        if !result_add {
-            return Err(Kind::InvalidValidatorSetDiff {
-                msg: "error in adding the header's added_validators",
+            for i in 0..extra.added_validators.len() {
+                validators.push(ValidatorData {
+                    address: extra.added_validators[i],
+                    public_key: extra.added_validators_public_keys[i],
+                })
             }
-            .into());
+            // apply the header's changeset
+            let result_remove = self.remove_validators(&extra.removed_validators);
+            if !result_remove {
+                return Err(Error::InvalidValidatorSetDiff(String::from("error in removing the header's removed_validators")));
+            }
+            let result_add = self.add_validators(validators);
+            if !result_add {
+                return Err(Error::InvalidValidatorSetDiff(String::from("error in adding the header's added_validators")));
+            }
+            let snapshot = LightConsensusState {
+                number: header.number.as_u64(),
+                validators: self.snapshot.validators.clone(),
+                hash: header_hash,
+            };
+            self.update_state_snapshot(snapshot)
         }
-        let snapshot = LightConsensusState {
-            number: header.number.as_u64(),
-            validators: self.snapshot.validators.clone(),
-            hash: header_hash,
-        };
-        self.update_state_snapshot(snapshot)
-    }
 
     fn update_state_snapshot(&mut self, snapshot: LightConsensusState) -> Result<(), Error> {
         // NOTE: right now we store only the last state entry but we could add
@@ -301,14 +286,14 @@ mod tests {
         assert_eq!(result, true);
 
         result = state.add_validators(vec![
-            ValidatorData {
-                address: bytes_to_address(&vec![0x2 as u8]),
-                public_key: SerializedPublicKey::default(),
-            },
-            ValidatorData {
-                address: bytes_to_address(&vec![0x1 as u8]),
-                public_key: SerializedPublicKey::default(),
-            },
+                                      ValidatorData {
+                                          address: bytes_to_address(&vec![0x2 as u8]),
+                                          public_key: SerializedPublicKey::default(),
+                                      },
+                                      ValidatorData {
+                                          address: bytes_to_address(&vec![0x1 as u8]),
+                                          public_key: SerializedPublicKey::default(),
+                                      },
         ]);
 
         assert_eq!(result, true);
@@ -420,7 +405,7 @@ mod tests {
                     &mut accounts,
                     &state.snapshot.validators,
                     diff.removed_validators,
-                );
+                    );
 
                 state.remove_validators(&removed_validators);
                 state.add_validators(added_validators);
@@ -441,21 +426,21 @@ mod tests {
     fn convert_val_names_to_validators(
         accounts: &mut AccountPool,
         val_names: Vec<String>,
-    ) -> Vec<ValidatorData> {
+        ) -> Vec<ValidatorData> {
         val_names
             .iter()
             .map(|name| ValidatorData {
                 address: accounts.address(name.to_string()),
                 public_key: SerializedPublicKey::default(),
             })
-            .collect()
+        .collect()
     }
 
     fn convert_val_names_to_removed_validators(
         accounts: &mut AccountPool,
         old_validators: &[ValidatorData],
         val_names: Vec<String>,
-    ) -> U128 {
+        ) -> U128 {
         let mut bitmap = U128::from(0);
         for v in val_names {
             for j in 0..old_validators.len() {

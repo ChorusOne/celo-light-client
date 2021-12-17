@@ -1,25 +1,21 @@
-use anomaly::{BoxError, Context};
 use thiserror::Error;
 use ethereum_types::U256;
 
-/// The main error type verification methods will return.
-/// See [`Kind`] for the different kind of errors.
-pub type Error = anomaly::Error<Kind>;
 
 /// All error kinds related to the light client.
 #[derive(Clone, Debug, Error)]
-pub enum Kind {
-    #[error("invalid data length while converting slice to fixed-size array type ({current} != {expected}")]
-    InvalidDataLength { current: usize, expected: usize },
+pub enum Error {
+    #[error("Istanbul extra field not correct length")]
+    IstanbulDataLength,
 
-    #[error("rlp decode error")]
-    RlpDecodeError,
+    #[error("rlp decode error {0}")]
+    RlpDecodeError(rlp::DecoderError),
 
-    #[error("header verification failed: {msg}")]
-    HeaderVerificationError { msg: &'static str },
+    #[error("header verification failed: {0}")]
+    HeaderVerificationError(String),
 
-    #[error("invalid validator set diff: {msg}")]
-    InvalidValidatorSetDiff { msg: &'static str },
+    #[error("invalid validator set diff: {0}")]
+    InvalidValidatorSetDiff(String),
 
     #[cfg(feature = "web3-support")]
     #[error("missing field {field}")]
@@ -48,11 +44,4 @@ pub enum Kind {
 
     #[error("proof verification error: {error}")]
     ProofVerification{error: String},
-}
-
-impl Kind {
-    /// Add additional context.
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Kind> {
-        Context::new(self, Some(source.into()))
-    }
 }

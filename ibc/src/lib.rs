@@ -1,12 +1,11 @@
+pub mod conversions;
 pub mod error;
 pub mod header;
 pub mod misbehaviour;
 pub mod state;
 pub mod wasm;
-pub mod conversions;
 
-
-use error::{Error, Kind};
+use error::Error;
 
 use ethereum_types::H256;
 use ibc_proto::ibc::core::commitment::v1::MerkleRoot;

@@ -1,4 +1,4 @@
-use crate::errors::{Error, Kind};
+use crate::errors::Error;
 use ethereum_types::*;
 use fixed_hash::construct_fixed_hash;
 use impl_rlp::impl_fixed_hash_rlp;
@@ -54,12 +54,10 @@ pub struct IstanbulExtra {
 impl IstanbulExtra {
     pub(crate) fn from_rlp(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() < IstanbulExtraVanity::len_bytes() {
-            return Err(Kind::RlpDecodeError
-                .context(DecoderError::Custom("invalid istanbul header extra-data"))
-                .into());
+            return Err(Error::IstanbulDataLength);
         }
         rlp::decode(&bytes[IstanbulExtraVanity::len_bytes()..])
-            .map_err(|e| Kind::RlpDecodeError.context(e).into())
+            .map_err(|e| Error::RlpDecodeError(e))
     }
 
     #[cfg(test)]
@@ -108,7 +106,10 @@ impl rlp::Encodable for IstanbulExtra {
 
 ///https://pkg.go.dev/github.com/celo-org/celo-blockchain/consensus/istanbul#ValidatorData
 #[derive(Clone, PartialEq, Debug, RlpEncodable, RlpDecodable)]
-#[cfg_attr(any(test, feature = "serialize"), derive(serde::Deserialize, serde::Serialize))]
+#[cfg_attr(
+    any(test, feature = "serialize"),
+    derive(serde::Deserialize, serde::Serialize)
+)]
 pub struct ValidatorData {
     #[cfg_attr(any(test, feature = "serialize"), serde(rename = "Address"))]
     pub address: Address,

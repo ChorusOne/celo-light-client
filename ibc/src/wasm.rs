@@ -25,6 +25,7 @@ pub struct ConsensusState {
 
 /// WARNING: to be removed or replaced with
 /// use Header = use ibc_proto::ibc::lightclients::wasm::v1::Header;
+#[derive(Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct Header {
     pub data: Vec<u8>,
     pub height: Option<Height>,
@@ -32,6 +33,7 @@ pub struct Header {
 
 /// WARNING: to be removed or replaced with
 /// use Misbehaviour = use ibc_proto::ibc::lightclients::wasm::v1::Misbehaviour;
+#[derive(Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct Misbehaviour {
     pub client_id: String,
     pub header_1: Option<Header>,

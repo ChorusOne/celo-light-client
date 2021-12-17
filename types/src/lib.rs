@@ -13,7 +13,7 @@ pub mod verify;
 #[cfg(test)]
 mod integration;
 
-pub use errors::{Error, Kind};
+pub use errors::Error;
 pub use header::Header;
 use istanbul::*;
 

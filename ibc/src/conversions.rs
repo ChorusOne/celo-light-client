@@ -1,18 +1,25 @@
+/// This set of conversion functions are not really used anywhere
+/// their only purpose is to guarantee compatibility check at compile time.
+///
+/// Once ibc-proto will be update and provide the structs temporarily defined 
+/// in wasm.rs, these conversions functions will ensure that their equivalents
+/// defined in this crate are mapped correctly
+
 use crate::header::Header;
 use crate::misbehaviour::Misbehaviour;
 use crate::state::{ClientState, ConsensusState};
 use crate::wasm;
 use crate::{convert_hash2root, convert_root2hash};
-use crate::{Error, Kind};
+use crate::Error;
 
 use cosmwasm_std::Binary;
 use std::convert::TryFrom;
 
 ///
-impl<T> TryFrom<wasm::ConsensusState> for ConsensusState<T> {
+impl TryFrom<wasm::ConsensusState> for ConsensusState {
     type Error = Error;
     fn try_from(ibc: wasm::ConsensusState) -> Result<Self, Self::Error> {
-        let root = ibc.root.ok_or_else(|| Kind::MissingField {
+        let root = ibc.root.ok_or_else(|| Error::MissingField {
             struct_name: String::from("wasm::ConsensusState"),
             field_name: String::from("root"),
         })?;
@@ -25,8 +32,8 @@ impl<T> TryFrom<wasm::ConsensusState> for ConsensusState<T> {
     }
 }
 
-impl<T> From<ConsensusState<T>> for wasm::ConsensusState {
-    fn from(cs: ConsensusState<T>) -> Self {
+impl From<ConsensusState> for wasm::ConsensusState {
+    fn from(cs: ConsensusState) -> Self {
         let root = convert_hash2root(cs.root());
         Self {
             data: cs.data.0,
@@ -37,10 +44,10 @@ impl<T> From<ConsensusState<T>> for wasm::ConsensusState {
 }
 
 ///
-impl<T> TryFrom<wasm::ClientState> for ClientState<T> {
+impl TryFrom<wasm::ClientState> for ClientState {
     type Error = Error;
     fn try_from(ibc: wasm::ClientState) -> Result<Self, Self::Error> {
-        let latest_height = ibc.latest_height.ok_or_else(|| Kind::MissingField {
+        let latest_height = ibc.latest_height.ok_or_else(|| Error::MissingField {
             struct_name: String::from("wasm::ClientState"),
             field_name: String::from("latest_height"),
         })?;
@@ -54,8 +61,8 @@ impl<T> TryFrom<wasm::ClientState> for ClientState<T> {
     }
 }
 
-impl<T> From<ClientState<T>> for wasm::ClientState {
-    fn from(cs: ClientState<T>) -> Self {
+impl From<ClientState> for wasm::ClientState {
+    fn from(cs: ClientState) -> Self {
         Self {
             data: cs.data.0,
             code_id: cs.code_id.0,
@@ -65,10 +72,10 @@ impl<T> From<ClientState<T>> for wasm::ClientState {
 }
 
 ///
-impl<T> TryFrom<wasm::Header> for Header<T> {
+impl TryFrom<wasm::Header> for Header {
     type Error = Error;
     fn try_from(ibc: wasm::Header) -> Result<Self, Self::Error> {
-        let height = ibc.height.ok_or_else(|| Kind::MissingField {
+        let height = ibc.height.ok_or_else(|| Error::MissingField {
             struct_name: String::from("wasm::Header"),
             field_name: String::from("height"),
         })?;
@@ -77,8 +84,8 @@ impl<T> TryFrom<wasm::Header> for Header<T> {
         Ok(s)
     }
 }
-impl<T> From<Header<T>> for wasm::Header {
-    fn from(h: Header<T>) -> Self {
+impl From<Header> for wasm::Header {
+    fn from(h: Header) -> Self {
         Self {
             data: h.data.0,
             height: Some(h.height),
@@ -87,14 +94,14 @@ impl<T> From<Header<T>> for wasm::Header {
 }
 
 ///
-impl<T> TryFrom<wasm::Misbehaviour> for Misbehaviour<T> {
+impl TryFrom<wasm::Misbehaviour> for Misbehaviour {
     type Error = Error;
     fn try_from(ibc: wasm::Misbehaviour) -> Result<Self, Self::Error> {
-        let head1 = ibc.header_1.ok_or_else(|| Kind::MissingField {
+        let head1 = ibc.header_1.ok_or_else(|| Error::MissingField {
             struct_name: String::from("wasm::Misbehaviour"),
             field_name: String::from("header_1"),
         })?;
-        let head2 = ibc.header_2.ok_or_else(|| Kind::MissingField {
+        let head2 = ibc.header_2.ok_or_else(|| Error::MissingField {
             struct_name: String::from("wasm::Misbehaviour"),
             field_name: String::from("header_1"),
         })?;
@@ -108,8 +115,8 @@ impl<T> TryFrom<wasm::Misbehaviour> for Misbehaviour<T> {
     }
 }
 
-impl<T> From<Misbehaviour<T>> for wasm::Misbehaviour {
-    fn from(mis: Misbehaviour<T>) -> Self {
+impl From<Misbehaviour> for wasm::Misbehaviour {
+    fn from(mis: Misbehaviour) -> Self {
         Self {
             client_id: mis.client_id,
             header_1: Some(mis.header_1.into()),
