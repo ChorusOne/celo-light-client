@@ -24,7 +24,6 @@ pub struct ConsensusState {
     pub data: String,    // Go serializes []byte to base64 encoded string
     pub timestamp: u64,
     pub root: MerkleRoot,
-    pub r#type: String,
 }
 
 #[derive(Message, Serialize, Deserialize, Clone, PartialEq)]
@@ -44,14 +43,12 @@ pub struct ClientState {
     pub frozen: bool,
     pub frozen_height: Option<Height>,
     pub latest_height: Option<Height>,
-    pub r#type: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
 pub struct WasmHeader {
     pub data: String, // Go serializes []byte to base64 encoded string
     pub height: Height,
-    pub r#type: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, JsonSchema)]
