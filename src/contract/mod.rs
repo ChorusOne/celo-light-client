@@ -464,7 +464,6 @@ fn check_header_and_update_state(
         root: MerkleRoot {
             hash: base64::encode(header.root.to_vec().as_slice()),
         },
-        r#type: consensus_state.r#type,
     };
 
     // set metadata for this consensus state
@@ -664,7 +663,6 @@ pub fn zero_custom_fields(
         frozen: false,
         frozen_height: None,
         latest_height: None,
-        r#type: me.r#type,
 
         // No custom fields in light client state
         data: me.data.clone(),
@@ -1384,7 +1382,6 @@ mod tests {
                 revision_number,
                 revision_height,
             }),
-            r#type: String::from("client_state"),
         }
     }
 
@@ -1401,7 +1398,6 @@ mod tests {
             root: MerkleRoot {
                 hash: base64::encode(root),
             },
-            r#type: String::from("consensus_state"),
         }
     }
 
