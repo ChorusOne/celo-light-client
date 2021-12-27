@@ -16,10 +16,6 @@ pub struct LightConsensusState {
     pub hash: H256,
 }
 
-pub fn verify(_lc: &LightConsensusState) -> Result<(), Error> {
-    todo!()
-}
-
 #[cfg(feature = "web3-support")]
 impl From<web3::types::Snapshot<ValidatorData>> for LightConsensusState {
     fn from(snap: web3::types::Snapshot<ValidatorData>) -> Self {

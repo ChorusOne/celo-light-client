@@ -68,6 +68,7 @@ fn main() {
     // setup state container
     info!("Setting up storage");
     let state_config = Config {
+        chain_id: 1,
         epoch_size,
         allowed_clock_skew: 5,
 

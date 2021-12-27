@@ -114,6 +114,10 @@ pub fn min_quorum_size(total_validators: usize) -> usize {
     ((2 * total_validators) - 1 + 3) / 3
 }
 
+pub fn verify(_lcs: &consensus::LightConsensusState, _lcl: &client::LightClientState) -> Result<(), Error> {
+    todo!()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

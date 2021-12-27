@@ -1,3 +1,4 @@
+use ethereum_types::{Address, U256};
 use rlp_derive::{RlpDecodable, RlpEncodable};
 
 #[derive(RlpDecodable, RlpEncodable, Clone, PartialEq, Debug, Default)]
@@ -14,6 +15,10 @@ pub struct LightClientState {
 
     pub allow_update_after_misbehavior: bool,
     pub allow_update_after_expiry: bool,
+
+    pub counterparty_address: Address,
+    pub commitment_map_position: U256,
+    pub next_sequence_rx_map_position: U256,
 }
 
 /// Config contains state related configuration flags

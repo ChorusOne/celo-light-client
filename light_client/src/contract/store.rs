@@ -1,5 +1,5 @@
 use crate::contract::serialization::must_deserialize;
-use celo_ibc::Height;
+use ibc_proto::ibc::core::client::v1::Height;
 
 use cosmwasm_std::{to_vec, Env, StdError, StdResult, Storage};
 
@@ -88,7 +88,7 @@ pub fn get_processed_time(
     storage: &dyn Storage,
     prefix: &'static str,
     height: &Height,
-) -> StdResult<u64> {
+) -> StdResult<cosmwasm_std::Timestamp> {
     let key = processed_time_key(prefix, height);
 
     must_deserialize(&storage.get(&key))

@@ -1,2 +1,3 @@
 [workspace]
 members = ["./types", "./light_client", "./ibc", "./example"]
+resolver = "2"

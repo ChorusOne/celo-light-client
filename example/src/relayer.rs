@@ -18,7 +18,8 @@ impl Relayer {
         let handle = tokio::runtime::Runtime::new().unwrap();
         let _eg = handle.enter();
         let block_id = BlockId::Number(number);
-        let blk = handle.block_on(self.web3.eth().block(block_id))
+        let blk = handle
+            .block_on(self.web3.eth().block(block_id))
             .expect("couldn't find block number")
             .expect("block does not exist");
         Header::try_from(blk).expect("parsing the block to celo header")

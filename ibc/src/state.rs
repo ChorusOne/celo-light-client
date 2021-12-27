@@ -1,6 +1,6 @@
 use crate::Error;
 
-use cosmwasm_std::Binary;
+use cosmwasm_std::{Binary, Timestamp};
 use ethereum_types::H256;
 use ibc_proto::ibc::core::client::v1::Height;
 use schemars::JsonSchema;
@@ -9,12 +9,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct ConsensusState {
     pub data: Binary,
-    pub timestamp: u64,
+    pub timestamp: Timestamp,
     root: [u8; H256::len_bytes()], // H256 does not derive JsonSchema
 }
 
 impl ConsensusState {
-    pub fn new<T: rlp::Encodable>(lc: &T, timestamp: u64, root: H256) -> Self {
+    pub fn new<T: rlp::Encodable>(lc: &T, timestamp: Timestamp, root: H256) -> Self {
         let r = rlp::encode(lc);
         Self {
             data: Binary::from(r.as_ref()),
@@ -25,7 +25,7 @@ impl ConsensusState {
     pub fn from_raw(data: Binary, timestamp: u64, root: H256) -> Self {
         Self {
             data,
-            timestamp,
+            timestamp: Timestamp::from_nanos(timestamp),
             root: root.0,
         }
     }
