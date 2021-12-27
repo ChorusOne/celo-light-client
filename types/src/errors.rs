@@ -5,11 +5,11 @@ use ethereum_types::U256;
 /// All error kinds related to the light client.
 #[derive(Clone, Debug, Error)]
 pub enum Error {
-    #[error("Istanbul extra field not correct length")]
-    IstanbulDataLength,
+    #[error("Istanbul extra field too short,{expected} > {current}")]
+    IstanbulDataLength{expected: usize, current: usize},
 
-    #[error("rlp decode error {0}")]
-    RlpDecodeError(rlp::DecoderError),
+    #[error("RlpError while decoding {0}, err: {1}")]
+    RlpDecodeError(String, rlp::DecoderError),
 
     #[error("header verification failed: {0}")]
     HeaderVerificationError(String),
@@ -18,8 +18,8 @@ pub enum Error {
     InvalidValidatorSetDiff(String),
 
     #[cfg(feature = "web3-support")]
-    #[error("missing field {field}")]
-    MissingField { field: String },
+    #[error("missing field {0}")]
+    MissingField(String),
 
     #[error("BLS verify error")]
     BlsVerifyError,
@@ -42,6 +42,6 @@ pub enum Error {
     #[error("Storage value is not matching, current: {current} vs expected: {expected}")]
     StorageProofValueNotMatching{current: U256, expected: U256},
 
-    #[error("proof verification error: {error}")]
-    ProofVerification{error: String},
+    #[error("proof verification error: {0}")]
+    ProofVerification(String),
 }

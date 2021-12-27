@@ -34,8 +34,8 @@ impl ConsensusState {
     }
 }
 
-pub fn extract_consensus<T: rlp::Decodable>(cs: &ConsensusState) -> Result<T, Error> {
-    rlp::decode(&cs.data).map_err(Error::from)
+pub fn extract_consensus<T: rlp::Decodable>(cs: &ConsensusState) -> Result<T, rlp::DecoderError> {
+    rlp::decode(&cs.data)
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -71,6 +71,6 @@ impl ClientState {
     }
 }
 
-pub fn extract_client<T: rlp::Decodable>(cs: &ClientState) -> Result<T, Error> {
-    rlp::decode(&cs.data).map_err(Error::from)
+pub fn extract_client<T: rlp::Decodable>(cs: &ClientState) -> Result<T, rlp::DecoderError> {
+    rlp::decode(&cs.data)
 }

@@ -179,9 +179,7 @@ pub fn verify(
             AsByteSlice::as_byte_slice(&expected_key),
             value.as_deref(),
         )
-        .map_err(|e| Error::ProofVerification {
-            error: format!("{:?}", e),
-        })?;
+        .map_err(|e| Error::ProofVerification(format!("{:?}", e)))?;
         let account = Account {
             balance: proof.balance,
             code_hash: proof.code_hash,
@@ -195,9 +193,7 @@ pub fn verify(
             &key,
             Some(&rlp::encode(&account)),
         )
-        .map_err(|e| Error::ProofVerification {
-            error: format!("{:?}", e),
-        })?;
+        .map_err(|e| Error::ProofVerification(format!("{:?}", e)))?;
         Ok(())
     } else {
         Err(Error::StorageProofKeyNotPresent)

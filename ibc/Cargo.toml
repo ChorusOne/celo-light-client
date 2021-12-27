@@ -10,7 +10,6 @@ ethereum-types = {version = "0.11", default-features = false}
 rlp = {version = "0.5"}
 serde = { version = "1", features = ["derive"]}
 schemars = { version = "0.8"}
-anomaly = { version = "0.2", default-features = false }
 thiserror = { version = "1.0", default-features = false }
 cosmwasm-std = { version = "0.16", default-features = false }
 

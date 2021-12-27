@@ -54,10 +54,10 @@ pub struct IstanbulExtra {
 impl IstanbulExtra {
     pub(crate) fn from_rlp(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() < IstanbulExtraVanity::len_bytes() {
-            return Err(Error::IstanbulDataLength);
+            return Err(Error::IstanbulDataLength{current: bytes.len(), expected: IstanbulExtraVanity::len_bytes()});
         }
         rlp::decode(&bytes[IstanbulExtraVanity::len_bytes()..])
-            .map_err(|e| Error::RlpDecodeError(e))
+            .map_err(|e| Error::RlpDecodeError(String::from("IstanbulExtra"), e))
     }
 
     #[cfg(test)]

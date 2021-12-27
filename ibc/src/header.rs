@@ -21,6 +21,6 @@ impl Header {
     }
 }
 
-pub fn extract_header<T: rlp::Decodable>(h: &Header) -> Result<T, Error> {
-    rlp::decode(&h.data).map_err(Error::from)
+pub fn extract_header<T: rlp::Decodable>(h: &Header) -> Result<T, rlp::DecoderError> {
+    rlp::decode(&h.data)
 }
