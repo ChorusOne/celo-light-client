@@ -1,11 +1,16 @@
 mod common;
 
-use cosmwasm_std::{from_binary, from_slice, Response};
+use cosmwasm_std::{from_binary, from_slice, Binary, Response, Timestamp};
 use cosmwasm_vm::testing;
 
-use celo_ibc::{ClientState, ConsensusState, Header, Height, MerkleRoot};
+use ethereum_types::H256;
+
+use celo_ibc::header::Header;
+use celo_ibc::state::{ClientState, ConsensusState};
 use celo_lightclient::contract::msg;
 use celo_types::client::LightClientState;
+use celo_types::consensus::LightConsensusState;
+use ibc_proto::ibc::core::client::v1::Height;
 
 // This line will test the output of cargo wasm
 static WASM: &[u8] = include_bytes!(concat!(
@@ -31,10 +36,16 @@ fn test_init_contract_do_nothing() {
 #[test]
 fn test_init_contract() {
     let (mut deps, env, info) = common::setup_and_init(WASM);
+    let consensus_state = ConsensusState::new(
+        &LightConsensusState::default(),
+        Timestamp::default(),
+        H256::default(),
+    );
+    let me = ClientState::new(&LightClientState::default(), Binary::default(), Height::default());
 
     let msg = msg::HandleMsg::InitializeState {
-        consensus_state: ConsensusState::default(),
-        me: ClientState::default(),
+        consensus_state,
+        me,
     };
 
     let resp: Response = testing::execute(&mut deps, env, info, msg).unwrap();
@@ -43,15 +54,15 @@ fn test_init_contract() {
         2,
         "attributes ['action', 'last_consensus_state_height'] missing"
     );
-    let action = resp.attributes.first().unwrap();
+    let action = resp.attributes.first().expect("resp.attributes.first()");
     assert_eq!(action.key, "action");
     assert_eq!(action.value, "init_block");
-    let last = resp.attributes.last().unwrap();
-    assert_eq!(last.key, "last_consensus_state_height");
-    assert_eq!(last.value, "0");
+    let last = resp.attributes.last().expect("resp.attributes.last()");
+    assert_eq!(last.key, "latest_height");
+    assert_eq!(last.value, "Height { revision_number: 0, revision_height: 0 }");
     assert!(resp.data.is_some(), "there should be data");
-    let bin_data = resp.data.unwrap();
-    let data: msg::InitializeStateResult = from_binary(&bin_data).unwrap();
+    let bin_data = resp.data.expect("resp.data");
+    let data: msg::InitializeStateResult = from_binary(&bin_data).expect("from_binary");
     assert!(data.result.is_valid);
     assert_eq!(data.me.frozen_height, None);
     assert_eq!(data.me.latest_height.revision_height, 0);
@@ -95,11 +106,10 @@ fn check_header_and_update_state() {
     let wasm_header = Header::new(&celo_header, latest_h.clone());
     let cons = ConsensusState::new(
         &light_cons,
-        String::new(),
-        celo_header.time.as_u64(),
-        MerkleRoot::from(celo_ibc::proof::convert_hash2root(celo_header.root)),
+        Timestamp::from_seconds(celo_header.time.as_u64()),
+        celo_header.root,
     );
-    let client = ClientState::new(&light_client, String::new(), latest_h, Vec::new());
+    let client = ClientState::new(&light_client, Binary::default(), latest_h);
 
     let msg = msg::HandleMsg::CheckHeaderAndUpdateState {
         header: wasm_header,
@@ -113,6 +123,9 @@ fn check_header_and_update_state() {
     assert_eq!(action.key, "action");
     assert_eq!(action.value, "update_block");
     let last = resp.attributes.last().unwrap();
-    assert_eq!(last.key, "last_consensus_state_height");
-    assert_eq!(last.value, "1");
+    assert_eq!(last.key, "latest_height");
+    assert_eq!(
+        last.value,
+        "Height { revision_number: 0, revision_height: 1 }"
+    );
 }

@@ -1,12 +1,11 @@
-use thiserror::Error;
 use ethereum_types::U256;
-
+use thiserror::Error;
 
 /// All error kinds related to the light client.
 #[derive(Clone, Debug, Error)]
 pub enum Error {
     #[error("Istanbul extra field too short,{expected} > {current}")]
-    IstanbulDataLength{expected: usize, current: usize},
+    IstanbulDataLength { expected: usize, current: usize },
 
     #[error("RlpError while decoding {0}, err: {1}")]
     RlpDecodeError(String, rlp::DecoderError),
@@ -16,10 +15,6 @@ pub enum Error {
 
     #[error("invalid validator set diff: {0}")]
     InvalidValidatorSetDiff(String),
-
-    #[cfg(feature = "web3-support")]
-    #[error("missing field {0}")]
-    MissingField(String),
 
     #[error("BLS verify error")]
     BlsVerifyError,
@@ -37,11 +32,22 @@ pub enum Error {
     StorageProofKeyNotPresent,
 
     #[error("Storage key is not matching, current: {current} vs expected: {expected}")]
-    StorageProofKeyNotMatching{current: U256, expected: U256},
+    StorageProofKeyNotMatching { current: U256, expected: U256 },
 
     #[error("Storage value is not matching, current: {current} vs expected: {expected}")]
-    StorageProofValueNotMatching{current: U256, expected: U256},
+    StorageProofValueNotMatching { current: U256, expected: U256 },
 
     #[error("proof verification error: {0}")]
     ProofVerification(String),
+}
+
+#[cfg(feature = "web3-support")]
+pub mod web3 {
+    #[derive(Clone, Default, Debug)]
+    pub struct MissingFieldErr(pub String);
+    impl std::fmt::Display for MissingFieldErr {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "MissingField {}", self.0)
+        }
+    }
 }

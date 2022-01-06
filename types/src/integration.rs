@@ -1,9 +1,6 @@
 use crate::{consensus::*, istanbul::*, state::*, *};
 use std::{fs::File, io::BufReader};
 
-//WARNING!!! this is super slow, it takes more than 5 minutes to run
-//const BAKLAVA_FILE :&str = "data/baklava.json";
-// when tests fail and you want to test on a subset of headers // faster cycle
 const BAKLAVA_FILE: &str = "data/baklava_small.json";
 
 pub fn get_genesis() -> LightConsensusState {

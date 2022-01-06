@@ -1,4 +1,3 @@
-use crate::errors::Error;
 use crate::istanbul::ValidatorData;
 use ethereum_types::H256;
 use rlp_derive::{RlpDecodable, RlpEncodable};

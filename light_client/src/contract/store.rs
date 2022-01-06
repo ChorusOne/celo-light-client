@@ -82,8 +82,6 @@ fn set_processed_time(
     Ok(())
 }
 
-// get_processed_time gets the time (in nanoseconds) at which this chain recieved and processed a celo header.
-// This is used to validate that a recieved packet has passed the delay period
 pub fn get_processed_time(
     storage: &dyn Storage,
     prefix: &'static str,

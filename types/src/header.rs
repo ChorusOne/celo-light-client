@@ -77,14 +77,14 @@ impl rlp::Encodable for Header {
 
 #[cfg(feature = "web3-support")]
 impl std::convert::TryFrom<web3::types::Block<H256>> for Header {
-    type Error = super::Error;
+    type Error = super::errors::web3::MissingFieldErr;
     fn try_from(blk: web3::types::Block<H256>) -> Result<Self, Self::Error> {
         let s = Self {
-            bloom: blk.logs_bloom.ok_or_else(|| super::Error::MissingField(String::from("logs_bloom")))?,
+            bloom: blk.logs_bloom.ok_or_else(|| super::errors::web3::MissingFieldErr(String::from("logs_bloom")))?,
             coinbase: blk.author,
             extra: blk.extra_data.0,
             gas_used: blk.gas_used,
-            number: blk.number.ok_or_else(|| super::Error::MissingField(String::from("number")))?,
+            number: blk.number.ok_or_else(|| super::errors::web3::MissingFieldErr(String::from("number")))?,
             parent_hash: blk.parent_hash,
             receipt_hash: blk.receipts_root,
             tx_hash: blk.transactions_root,

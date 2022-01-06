@@ -1,5 +1,3 @@
-use crate::Error;
-
 use cosmwasm_std::{Binary, Timestamp};
 use ethereum_types::H256;
 use ibc_proto::ibc::core::client::v1::Height;
@@ -25,7 +23,7 @@ impl ConsensusState {
     pub fn from_raw(data: Binary, timestamp: u64, root: H256) -> Self {
         Self {
             data,
-            timestamp: Timestamp::from_nanos(timestamp),
+            timestamp: Timestamp::from_seconds(timestamp),
             root: root.0,
         }
     }
@@ -47,6 +45,15 @@ pub struct ClientState {
 }
 
 impl ClientState {
+    pub fn new<T: rlp::Encodable>(lc: &T, code_id: Binary, latest_height: Height) -> Self {
+        let r = rlp::encode(lc);
+        Self {
+            data: Binary::from(r.as_ref()),
+            code_id,
+            latest_height,
+            frozen_height: None,
+        }
+    }
     pub fn from_raw(
         data: Binary,
         code_id: Binary,
@@ -58,15 +65,6 @@ impl ClientState {
             code_id,
             latest_height,
             frozen_height,
-        }
-    }
-    pub fn new<T: rlp::Encodable>(lc: &T, code_id: Binary, latest_height: Height) -> Self {
-        let r = rlp::encode(lc);
-        Self {
-            data: Binary::from(r.as_ref()),
-            code_id,
-            latest_height,
-            frozen_height: None,
         }
     }
 }

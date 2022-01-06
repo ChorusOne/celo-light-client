@@ -13,8 +13,4 @@ schemars = { version = "0.8"}
 thiserror = { version = "1.0", default-features = false }
 cosmwasm-std = { version = "0.16", default-features = false }
 
-#ibc-proto = {git = "https://github.com/ChorusOne/ibc-rs", branch = "giulio/realcelochain", default-features = false, optional = true}
-#ibc-proto = {path = "/home/giulio/src/github.com/ChorusOne/ibc-rs/proto", default-features = false, optional = true}
-ibc-proto = {path = "/home/giulio/src/github.com/ChorusOne/ibc-rs/proto", default-features = false, features = ["std"]}
-
-[features]
+ibc-proto = {git = "https://github.com/ChorusOne/ibc-rs", branch = "giulio/proto_cosmwasm", default-features = false, features = ["std"]}

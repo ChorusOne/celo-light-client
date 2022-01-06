@@ -7,7 +7,6 @@ pub(crate) fn convert_celo(c_error: CeloError) -> StdError {
             expected: expected as u64,
             actual: current as u64,
         },
-        CeloError::MissingField(field) => StdError::NotFound { kind: field },
         CeloError::RlpDecodeError(kind, e) => StdError::ParseErr {
             target_type: kind,
             msg: e.to_string(),
@@ -37,13 +36,13 @@ pub(crate) fn convert_celo(c_error: CeloError) -> StdError {
             msg: String::from("CeloError::StorageProofKeyNotPresent"),
         },
         CeloError::StorageProofKeyNotMatching { current, expected } => StdError::GenericErr {
-            msg: String::from("CeloError::StorageProofKeyNotMatching"),
+            msg: format!("CeloError::StorageProofKeyNotMatching {} != {}", current, expected),
         },
         CeloError::StorageProofValueNotMatching { current, expected } => StdError::GenericErr {
-            msg: String::from("CeloError::StorageProofValueNotMatching"),
+            msg: format!("CeloError::StorageProofValueNotMatching {} != {}", current, expected),
         },
         CeloError::ProofVerification(msg) => StdError::GenericErr {
-            msg: String::from("CeloError::ProofVerification"),
+            msg: format!("CeloError::ProofVerification {}", msg),
         },
     }
 }

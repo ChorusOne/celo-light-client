@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 #![cfg(any(test, feature = "serialize"))]
 pub(crate) mod hexstring {
     use hex::FromHex;

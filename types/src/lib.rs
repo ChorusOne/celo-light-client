@@ -115,7 +115,8 @@ pub fn min_quorum_size(total_validators: usize) -> usize {
 }
 
 pub fn verify(_lcs: &consensus::LightConsensusState, _lcl: &client::LightClientState) -> Result<(), Error> {
-    todo!()
+    //todo!()
+    Ok(())
 }
 
 #[cfg(test)]

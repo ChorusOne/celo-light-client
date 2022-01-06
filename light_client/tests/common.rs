@@ -7,7 +7,7 @@ use celo_types::Header as CeloHeader;
 use cosmwasm_std::{Coin, Env, MessageInfo, Response};
 use cosmwasm_vm::testing;
 
-use celo_ibc::{ClientState, ConsensusState};
+use celo_ibc::state::{ClientState, ConsensusState};
 use celo_lightclient::contract::msg;
 
 type DepsTest = cosmwasm_vm::Instance<testing::MockApi, testing::MockStorage, testing::MockQuerier>;

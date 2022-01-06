@@ -7,8 +7,8 @@ pub mod wasm;
 
 use error::Error;
 
-use ethereum_types::{H256, Address};
-use ibc_proto::ibc::core::commitment::v1::{MerklePrefix,MerkleRoot};
+use ethereum_types::H256;
+use ibc_proto::ibc::core::commitment::v1::MerkleRoot;
 
 pub fn convert_hash2root(h: H256) -> MerkleRoot {
     MerkleRoot {

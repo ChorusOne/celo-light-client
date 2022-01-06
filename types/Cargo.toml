@@ -9,8 +9,7 @@ authors = ["Kaczanowski Mateusz <mateusz@chorus.one>"]
 [dependencies]
 serde = { version = "1", features = ["derive"], optional = true}
 ethereum-types = {version = "0.11", default-features = false, features = ["rlp"]}
-#web3 = {git = "https://github.com/ChorusOne/rust-web3", branch = "celo", features = ["celo"], optional = true}
-web3 = {path = "/home/giulio/src/github.com/ChorusOne/rust-web3", features = ["celo"], optional = true}
+web3 = {git = "https://github.com/ChorusOne/rust-web3", branch = "celo", features = ["celo"], optional = true}
 rlp = {version = "0.5"}
 rlp-derive = {version = "0.1"} # RlpEncodable and RlpDecodable have issues with Vec<T> fields
 hex = { version = "0.4", features = ["serde"]}
@@ -20,10 +19,11 @@ fixed-hash = {version = "0.7", default-features = false}
 thiserror = { version = "1.0", default-features = false }
 sha3 = { version = "0.9", default-features = false }
 bytes = {version = "1", default-features = false}
-trie-db = {path = "/home/giulio/src/github.com/ChorusOne/trie/trie-db", default-features = false, features =["std"]}
+
+trie-db = {git = "https://github.com/ChorusOne/trie", branch = "giulio/eip1186", default-features = false, features =["std"]}
 byte-slice-cast = {version = "1.2"}
 
-#bls-crypto = {git = "https://github.com/celo-org/celo-bls-snark-rs"}
+bls-crypto = {git = "https://github.com/ChorusOne/celo-bls-snark-rs", branch = "giulio/random", optional = true}
 bls-crypto = {path = "/home/giulio/src/github.com/ChorusOne/celo-bls-snark-rs/crates/bls-crypto", optional = true}
 ark-serialize = {version = "0.3", default-features = false, optional = true }
 
@@ -32,7 +32,7 @@ serde = { version = "1", features = ["derive"]}
 ethereum-types = {version = "0.11", default-features = false, features = ["rlp", "serialize"]}
 serde_json = {version = "1.0"}
 secp256k1 = { version = "0.20", features = ["bitcoin_hashes", "rand"] }
-trie-db = {path = "/home/giulio/src/github.com/ChorusOne/trie/trie-db"}
+trie-db = {git = "https://github.com/ChorusOne/trie", branch = "giulio/eip1186"}
 
 [features]
 web3-support = ["web3"]

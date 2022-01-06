@@ -7,12 +7,12 @@ edition = "2018"
 
 [dependencies]
 celo-ibc = {path = "../ibc"}
-celo-types = {path = "../types", features = ["serialize"]}
+celo-types = {path = "../types", features = ["serialize"]} #, "bls-support"]}
 serde = { version = "1", features = ["derive"]}
 ethereum-types = {version = "0.11", default-features = false, features = ["serialize"]}
 thiserror = { version = "1.0", default-features = false }
 rlp = {version = "0.5"}
-ibc-proto = {path = "/home/giulio/src/github.com/ChorusOne/ibc-rs/proto", default-features = false, features = ["std"]}
+ibc-proto = {git = "https://github.com/ChorusOne/ibc-rs", branch = "giulio/proto_cosmwasm", default-features = false, features = ["std"]}
 sha3 = { version = "0.9", default-features = false }
 prost = { version = "0.9", default-features = false, features = ["prost-derive"] }
 

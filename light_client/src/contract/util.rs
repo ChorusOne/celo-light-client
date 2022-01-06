@@ -1,8 +1,5 @@
 use crate::contract::errors::{convert_celo, convert_rlp};
-use crate::contract::{
-    CeloClientState, CeloConsensusState, CeloHeader, WasmClientState, WasmConsensusState,
-    WasmHeader, WasmMisbehaviour,
-};
+use crate::contract::{CeloClientState, WasmClientState, WasmConsensusState, WasmHeader};
 
 use celo_ibc::header::extract_header;
 use celo_ibc::state::{extract_client, extract_consensus};
@@ -73,6 +70,5 @@ pub(crate) fn is_expired(
     latest_timestamp: Timestamp,
     trusting_period: u64,
 ) -> bool {
-    //WARNING Trusting period is nanos or seconds?!!?!?!
-    current_timestamp > latest_timestamp.plus_nanos(trusting_period)
+    current_timestamp > latest_timestamp.plus_seconds(trusting_period)
 }

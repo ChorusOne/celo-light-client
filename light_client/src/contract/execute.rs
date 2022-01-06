@@ -75,7 +75,7 @@ pub(crate) fn check_header_and_update_state(
     let new_client_state = me;
     let new_consensus_state = WasmConsensusState::new(
         state.snapshot(),
-        Timestamp::from_nanos(celo_header.time.as_u64()),
+        Timestamp::from_seconds(celo_header.time.as_u64()),
         celo_header.root,
     );
     // set metadata for this consensus state

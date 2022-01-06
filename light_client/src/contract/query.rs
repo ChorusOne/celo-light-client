@@ -395,8 +395,7 @@ fn verify_delay_period_passed(
 ) -> StdResult<()> {
     let processed_time =
         store::get_processed_time(deps.storage, store::EMPTY_PREFIX, &proof_height)?;
-    // WARNING: I hate raw time variables... is it nano or seconds???!!!!???
-    let valid_time = processed_time.plus_nanos(delay_time_period);
+    let valid_time = processed_time.plus_seconds(delay_time_period);
 
     if current_timestamp < valid_time {
         return Err(StdError::generic_err(format!(

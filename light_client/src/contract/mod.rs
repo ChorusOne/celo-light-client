@@ -11,23 +11,6 @@ mod serialization;
 mod store;
 mod util;
 
-/*
-mod wasm;
-
-use crate::contract::serialization::*;
-use crate::contract::store::*;
-use crate::contract::util::*;
-use crate::contract::wasm::*;
-use crate::contract::execute;
-
-use celo_ibc::{extract_header, extract_lc_client_state, extract_lc_consensus_state};
-use celo_ibc::{
-    Channel, ConnectionEnd, ConsensusState, Header, Height, MerklePrefix, MerkleRoot,
-    Misbehaviour,
-};
-
-*/
-use cosmwasm_std::to_binary;
 use cosmwasm_std::{Deps, DepsMut, Env, MessageInfo};
 use cosmwasm_std::{QueryResponse, Response, StdError, StdResult};
 

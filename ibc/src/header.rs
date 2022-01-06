@@ -1,4 +1,3 @@
-use crate::Error;
 use ibc_proto::ibc::core::client::v1::Height;
 use cosmwasm_std::Binary;
 
