@@ -20,7 +20,7 @@ pub(crate) fn convert_celo(c_error: CeloError) -> StdError {
         CeloError::BlsVerifyError => StdError::GenericErr {
             msg: String::from("CeloError::BlsVerifyError"),
         },
-        CeloError::BlsInvalidSignature => StdError::VerificationErr {
+        CeloError::BlsInvalidSignature(_) => StdError::VerificationErr {
             source: VerificationError::InvalidSignatureFormat,
         },
         CeloError::BlsInvalidPublicKey => StdError::VerificationErr {

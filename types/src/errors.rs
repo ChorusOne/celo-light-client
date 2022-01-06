@@ -19,8 +19,9 @@ pub enum Error {
     #[error("BLS verify error")]
     BlsVerifyError,
 
+
     #[error("BLS invalid signature")]
-    BlsInvalidSignature,
+    BlsInvalidSignature(String),
 
     #[error("BLS invalid public key")]
     BlsInvalidPublicKey,

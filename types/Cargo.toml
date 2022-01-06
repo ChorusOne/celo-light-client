@@ -24,8 +24,7 @@ trie-db = {git = "https://github.com/ChorusOne/trie", branch = "giulio/eip1186",
 byte-slice-cast = {version = "1.2"}
 
 bls-crypto = {git = "https://github.com/ChorusOne/celo-bls-snark-rs", branch = "giulio/random", optional = true}
-bls-crypto = {path = "/home/giulio/src/github.com/ChorusOne/celo-bls-snark-rs/crates/bls-crypto", optional = true}
-ark-serialize = {version = "0.3", default-features = false, optional = true }
+ark-serialize = {git = "https://github.com/ChorusOne/ark-algebra", branch = "giulio/random", default-features = false, features = ["derive", "std"], optional = true}
 
 [dev-dependencies]
 serde = { version = "1", features = ["derive"]}
@@ -37,4 +36,4 @@ trie-db = {git = "https://github.com/ChorusOne/trie", branch = "giulio/eip1186"}
 [features]
 web3-support = ["web3"]
 serialize = ["serde", "ethereum-types/serialize"]
-bls-support = ["bls-crypto"]
+bls-support = ["bls-crypto", "ark-serialize"]

@@ -1,5 +1,5 @@
 #![cfg(any(test, feature = "bls-support"))]
-use crate::errors::*;
+use crate::errors::Error;
 use crate::istanbul::*;
 use ethereum_types::*;
 
@@ -8,6 +8,7 @@ use bls_crypto::{
     hash_to_curve::try_and_increment::DIRECT_HASH_TO_G1, PublicKey as BLSPublicKey,
     Signature as BLSSignature,
 };
+use std::convert::TryFrom;
 
 pub(crate) fn verify_aggregated_seal(
     header_hash: H256,
@@ -20,10 +21,10 @@ pub(crate) fn verify_aggregated_seal(
         .filter(|(i, _)| seal.bitmap.bit(*i))
         .map(|(_, validator)| BLSPublicKey::try_from(validator.public_key))
         .collect::<Result<_, _>>()
-        .map_err(|_| Kind::BlsInvalidPublicKey {})?;
+        .map_err(|_| Error::BlsInvalidPublicKey)?;
     let expected_quorum_size = min_quorum_size(validators.len());
     if public_keys.len() < expected_quorum_size {
-        return Err(Kind::MissingSeals {
+        return Err(Error::MissingSeals {
             current: public_keys.len(),
             expected: expected_quorum_size,
         }
@@ -34,7 +35,7 @@ pub(crate) fn verify_aggregated_seal(
     let apk = BLSPublicKey::aggregate(public_keys);
     match apk.verify(&proposal_seal, &[], &bls_sig, &*DIRECT_HASH_TO_G1) {
         Ok(_) => Ok(()),
-        Err(_) => Err(Kind::BlsVerifyError.into()),
+        Err(_) => Err(Error::BlsVerifyError.into()),
     }
 }
 
@@ -51,7 +52,7 @@ fn prepare_commited_seal(hash: &H256, round: &U128) -> Vec<u8> {
 }
 
 fn deserialize_signature(signature: &[u8]) -> Result<BLSSignature, Error> {
-    BLSSignature::deserialize(signature).map_err(|e| Kind::BlsInvalidSignature.context(e).into())
+    BLSSignature::deserialize(signature).map_err(|e| Error::BlsInvalidSignature(format!("{:?}", e)))
 }
 
 impl std::convert::TryFrom<SerializedPublicKey> for BLSPublicKey {

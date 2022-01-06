@@ -1,5 +1,5 @@
 use crate::{consensus::*, istanbul::*, state::*, *};
-use std::{fs::File, io::BufReader};
+use std::{fs::File, io::BufReader, convert::TryFrom};
 
 const BAKLAVA_FILE: &str = "data/baklava_small.json";
 
