@@ -2,6 +2,7 @@ use ethereum_types::{Address, U256};
 use rlp_derive::{RlpDecodable, RlpEncodable};
 
 #[derive(RlpDecodable, RlpEncodable, Clone, PartialEq, Debug, Default)]
+#[cfg_attr(any(test, feature = "serialize"), derive(serde::Deserialize, serde::Serialize))]
 pub struct LightClientState {
     pub chain_id: u64,
     pub epoch_size: u64,
