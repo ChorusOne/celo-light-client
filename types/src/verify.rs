@@ -173,7 +173,7 @@ pub fn verify(
             });
         }
         let value = expected_value.map(|v| AsByteSlice::as_byte_slice(&v).to_vec());
-        trie_db::proof::eip1186::verify_proof::<CeloLayout>(
+        trie_eip1186::verify_proof::<CeloLayout>(
             &proof.storage_hash,
             &storage_proof.proof,
             AsByteSlice::as_byte_slice(&expected_key),
@@ -187,7 +187,7 @@ pub fn verify(
             storage_hash: proof.storage_hash,
         };
         let key = Keccak256::digest(address.as_ref());
-        trie_db::proof::eip1186::verify_proof::<CeloLayout>(
+        trie_eip1186::verify_proof::<CeloLayout>(
             &root,
             &proof.account_proof,
             &key,

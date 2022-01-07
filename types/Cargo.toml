@@ -18,8 +18,8 @@ impl-serde = {version = "0.3"}
 fixed-hash = {version = "0.7", default-features = false}
 thiserror = { version = "1.0", default-features = false }
 sha3 = { version = "0.9", default-features = false }
-bytes = {version = "1", default-features = false}
 
+trie-eip1186 = {git = "https://github.com/ChorusOne/trie", branch = "giulio/eip1186", default-features = false, features =["std"]}
 trie-db = {git = "https://github.com/ChorusOne/trie", branch = "giulio/eip1186", default-features = false, features =["std"]}
 byte-slice-cast = {version = "1.2"}
 
